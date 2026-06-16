@@ -1,0 +1,13 @@
+{
+  "name": "ra-bill-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright E2E tests for the RA Bill ERPNext app",
+  "scripts": {
+    "test": "playwright test",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}

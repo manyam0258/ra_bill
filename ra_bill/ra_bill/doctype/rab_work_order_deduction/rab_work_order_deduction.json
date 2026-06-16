@@ -1,0 +1,86 @@
+{
+ "actions": [],
+ "creation": "2026-06-16 12:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "deduction_type",
+  "description",
+  "method",
+  "rate",
+  "amount",
+  "cap_percentage",
+  "account"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "default": "Other",
+   "fieldname": "deduction_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Deduction Type",
+   "options": "Retention\nTDS\nLabour Cess\nMobilization Recovery\nLiquidated Damages\nClient Material Recovery\nWater / Electricity\nOther",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "description",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Description"
+  },
+  {
+   "columns": 2,
+   "default": "Percentage",
+   "fieldname": "method",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Method",
+   "options": "Percentage\nFixed Amount",
+   "reqd": 1
+  },
+  {
+   "columns": 1,
+   "depends_on": "eval:doc.method=='Percentage'",
+   "description": "Percentage of the bill's billable value (work + escalation)",
+   "fieldname": "rate",
+   "fieldtype": "Percent",
+   "in_list_view": 1,
+   "label": "Rate %"
+  },
+  {
+   "columns": 2,
+   "depends_on": "eval:doc.method=='Fixed Amount'",
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Amount"
+  },
+  {
+   "columns": 2,
+   "description": "Cumulative cap as % of contract value (e.g. retention cap). 0 = no cap.",
+   "fieldname": "cap_percentage",
+   "fieldtype": "Percent",
+   "label": "Cap % (of Contract Value)"
+  },
+  {
+   "fieldname": "account",
+   "fieldtype": "Link",
+   "label": "Account",
+   "options": "Account"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-06-16 12:00:00",
+ "module": "RA Bill",
+ "name": "RAB Work Order Deduction",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

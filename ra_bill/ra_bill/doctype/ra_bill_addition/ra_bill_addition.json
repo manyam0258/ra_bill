@@ -1,0 +1,77 @@
+{
+ "actions": [],
+ "creation": "2026-06-16 12:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "addition_type",
+  "description",
+  "method",
+  "rate",
+  "amount",
+  "account"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "default": "Other",
+   "fieldname": "addition_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Addition Type",
+   "options": "Escalation\nSecured Advance\nPrice Adjustment\nOther",
+   "reqd": 1
+  },
+  {
+   "columns": 3,
+   "fieldname": "description",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Description"
+  },
+  {
+   "columns": 2,
+   "default": "Percentage",
+   "fieldname": "method",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Method",
+   "options": "Percentage\nFixed Amount",
+   "reqd": 1
+  },
+  {
+   "columns": 1,
+   "depends_on": "eval:doc.method=='Percentage'",
+   "fieldname": "rate",
+   "fieldtype": "Percent",
+   "in_list_view": 1,
+   "label": "Rate %"
+  },
+  {
+   "columns": 2,
+   "description": "Computed for Escalation/Secured Advance/Percentage rows; enter directly for Fixed Amount.",
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Amount"
+  },
+  {
+   "fieldname": "account",
+   "fieldtype": "Link",
+   "label": "Account",
+   "options": "Account"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-06-16 12:00:00",
+ "module": "RA Bill",
+ "name": "RA Bill Addition",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

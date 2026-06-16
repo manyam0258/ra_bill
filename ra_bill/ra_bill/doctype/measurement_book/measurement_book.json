@@ -1,0 +1,145 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-06-15 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "project",
+  "boq",
+  "column_break_1",
+  "measurement_date",
+  "ra_bill",
+  "section_entries",
+  "entries",
+  "remarks",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "default": "MB-.YYYY.-",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "MB-.YYYY.-"
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Project",
+   "options": "Project",
+   "reqd": 1
+  },
+  {
+   "fieldname": "boq",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Work Order",
+   "options": "RAB Work Order",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "measurement_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Measurement Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "ra_bill",
+   "fieldtype": "Link",
+   "label": "Consumed in RA Bill",
+   "options": "RA Bill",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_entries",
+   "fieldtype": "Section Break",
+   "label": "Measurement Entries"
+  },
+  {
+   "fieldname": "entries",
+   "fieldtype": "Table",
+   "label": "Entries",
+   "options": "Measurement Entry"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Measurement Book",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [
+  {
+   "group": "Billing",
+   "link_doctype": "RA Bill",
+   "link_fieldname": "measurement_book"
+  }
+ ],
+ "modified": "2026-06-15 00:00:00",
+ "module": "RA Bill",
+ "name": "Measurement Book",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "cancel": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Site Engineer",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Quantity Surveyor",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "project"
+}

@@ -1,0 +1,576 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-06-15 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "project",
+  "boq",
+  "bill_type",
+  "billing_method",
+  "previous_ra_bill",
+  "column_break_1",
+  "company",
+  "cost_center",
+  "posting_date",
+  "period_from",
+  "period_to",
+  "ra_bill_no",
+  "is_final_bill",
+  "measurement_book",
+  "party_section",
+  "customer",
+  "supplier",
+  "column_break_party",
+  "currency",
+  "items_section",
+  "get_items_btn",
+  "get_variation_btn",
+  "get_mb_btn",
+  "items",
+  "escalation_section",
+  "escalations",
+  "escalation_amount",
+  "additions_section",
+  "additions",
+  "additions_total",
+  "value_section",
+  "gross_work_value",
+  "previous_billed_value",
+  "cumulative_work_value",
+  "billable_value",
+  "column_break_2",
+  "labour_cess_amount",
+  "apply_gst",
+  "gst_percentage",
+  "gst_amount",
+  "total_invoice_value",
+  "secured_advance_section",
+  "secured_advances",
+  "secured_advance_current",
+  "secured_advance_previous",
+  "secured_advance_adjustment",
+  "deductions_section",
+  "deductions",
+  "column_break_3",
+  "retention_amount",
+  "tds_amount",
+  "mobilization_recovery_amount",
+  "advance_balance_before",
+  "totals_section",
+  "total_deductions",
+  "net_payable",
+  "accounting_section",
+  "sales_invoice",
+  "purchase_invoice",
+  "column_break_4",
+  "remarks",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "default": "RA-.YYYY.-",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "RA-.YYYY.-"
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Project",
+   "options": "Project",
+   "reqd": 1
+  },
+  {
+   "fieldname": "boq",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Work Order",
+   "options": "RAB Work Order",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "boq.boq_type",
+   "fieldname": "bill_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Bill Type",
+   "options": "Client\nSubcontractor",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "boq.billing_method",
+   "fieldname": "billing_method",
+   "fieldtype": "Select",
+   "label": "Billing Method",
+   "options": "Item Rate (Measured)\nPercentage Completion\nMilestone\nLump Sum",
+   "read_only": 1
+  },
+  {
+   "description": "Link to the immediately preceding RA Bill; previous quantities are pulled from it",
+   "fieldname": "previous_ra_bill",
+   "fieldtype": "Link",
+   "label": "Previous RA Bill",
+   "options": "RA Bill"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "boq.company",
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cost_center",
+   "fieldtype": "Link",
+   "label": "Cost Center",
+   "options": "Cost Center"
+  },
+  {
+   "default": "Today",
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Posting Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "period_from",
+   "fieldtype": "Date",
+   "label": "Billing Period From"
+  },
+  {
+   "fieldname": "period_to",
+   "fieldtype": "Date",
+   "label": "Billing Period To"
+  },
+  {
+   "description": "Sequential RA Bill number for the project (RA-1, RA-2 ...)",
+   "fieldname": "ra_bill_no",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "RA Bill No.",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_final_bill",
+   "fieldtype": "Check",
+   "label": "Is Final Bill"
+  },
+  {
+   "description": "Optional: pull this period's measured quantities from a Measurement Book",
+   "fieldname": "measurement_book",
+   "fieldtype": "Link",
+   "label": "Measurement Book",
+   "options": "Measurement Book"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "party_section",
+   "fieldtype": "Section Break",
+   "label": "Party"
+  },
+  {
+   "depends_on": "eval:doc.bill_type=='Client'",
+   "fetch_from": "boq.customer",
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.bill_type=='Subcontractor'",
+   "fetch_from": "boq.supplier",
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Subcontractor (Supplier)",
+   "options": "Supplier",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_party",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "boq.currency",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "items_section",
+   "fieldtype": "Section Break",
+   "label": "Measured Items (Cumulative)"
+  },
+  {
+   "fieldname": "get_items_btn",
+   "fieldtype": "Button",
+   "label": "Get Items from Work Order"
+  },
+  {
+   "fieldname": "get_variation_btn",
+   "fieldtype": "Button",
+   "label": "Get Variation Items"
+  },
+  {
+   "depends_on": "measurement_book",
+   "fieldname": "get_mb_btn",
+   "fieldtype": "Button",
+   "label": "Get Quantities from Measurement Book"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "RA Bill Items",
+   "options": "RA Bill Item",
+   "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "escalations",
+   "fieldname": "escalation_section",
+   "fieldtype": "Section Break",
+   "label": "Price Escalation"
+  },
+  {
+   "fieldname": "escalations",
+   "fieldtype": "Table",
+   "label": "Escalation",
+   "options": "RA Bill Escalation"
+  },
+  {
+   "fieldname": "escalation_amount",
+   "fieldtype": "Currency",
+   "label": "Total Escalation",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "additions",
+   "fieldname": "additions_section",
+   "fieldtype": "Section Break",
+   "label": "Additions"
+  },
+  {
+   "description": "Carried forward from the Work Order. Escalation / Secured Advance rows mirror their detail tables; Price Adjustment / Other rows add to the billable value.",
+   "fieldname": "additions",
+   "fieldtype": "Table",
+   "label": "Additions",
+   "options": "RA Bill Addition"
+  },
+  {
+   "description": "Sum of Price Adjustment / Other additions (added to billable value)",
+   "fieldname": "additions_total",
+   "fieldtype": "Currency",
+   "label": "Other Additions Total",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "value_section",
+   "fieldtype": "Section Break",
+   "label": "Bill Value"
+  },
+  {
+   "bold": 1,
+   "fieldname": "gross_work_value",
+   "fieldtype": "Currency",
+   "label": "Gross Work Value (This Bill)",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "previous_billed_value",
+   "fieldtype": "Currency",
+   "label": "Previous Billed Value",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cumulative_work_value",
+   "fieldtype": "Currency",
+   "label": "Cumulative Work Value",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "description": "Gross Work + Escalation + Other Additions; the taxable base for cess, GST, retention and TDS",
+   "fieldname": "billable_value",
+   "fieldtype": "Currency",
+   "label": "Billable Value",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "labour_cess_amount",
+   "fieldtype": "Currency",
+   "label": "Labour Cess Amount",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "apply_gst",
+   "fieldtype": "Check",
+   "label": "Apply GST"
+  },
+  {
+   "default": "18",
+   "depends_on": "apply_gst",
+   "fieldname": "gst_percentage",
+   "fieldtype": "Percent",
+   "label": "GST %"
+  },
+  {
+   "fieldname": "gst_amount",
+   "fieldtype": "Currency",
+   "label": "GST Amount (preview)",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "bold": 1,
+   "fieldname": "total_invoice_value",
+   "fieldtype": "Currency",
+   "label": "Total Invoice Value",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "secured_advances",
+   "fieldname": "secured_advance_section",
+   "fieldtype": "Section Break",
+   "label": "Secured Advance (Materials at Site)"
+  },
+  {
+   "fieldname": "secured_advances",
+   "fieldtype": "Table",
+   "label": "Secured Advances",
+   "options": "RA Bill Secured Advance"
+  },
+  {
+   "fieldname": "secured_advance_current",
+   "fieldtype": "Currency",
+   "label": "Secured Advance Outstanding (This Bill)",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "secured_advance_previous",
+   "fieldtype": "Currency",
+   "label": "Secured Advance (Previous Bill)",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "description": "Net secured advance paid (+) or recovered (-) this bill; added to net payable",
+   "fieldname": "secured_advance_adjustment",
+   "fieldtype": "Currency",
+   "label": "Secured Advance Adjustment",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "deductions_section",
+   "fieldtype": "Section Break",
+   "label": "Deductions & Recoveries"
+  },
+  {
+   "description": "Carried forward from the Work Order. Retention/TDS/Labour Cess/Mobilization Recovery and any other deductions; each row's amount is computed on the billable value (or entered for Fixed Amount).",
+   "fieldname": "deductions",
+   "fieldtype": "Table",
+   "label": "Deductions",
+   "options": "RA Bill Deduction"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "retention_amount",
+   "fieldtype": "Currency",
+   "label": "Retention Amount",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tds_amount",
+   "fieldtype": "Currency",
+   "label": "TDS Amount",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "mobilization_recovery_amount",
+   "fieldtype": "Currency",
+   "label": "Mobilization Recovery Amount",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "advance_balance_before",
+   "fieldtype": "Currency",
+   "label": "Advance Balance (before this bill)",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "totals_section",
+   "fieldtype": "Section Break",
+   "label": "Net Payable"
+  },
+  {
+   "fieldname": "total_deductions",
+   "fieldtype": "Currency",
+   "label": "Total Deductions",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "bold": 1,
+   "fieldname": "net_payable",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Net Payable",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "accounting_section",
+   "fieldtype": "Section Break",
+   "label": "Accounting & Notes"
+  },
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Sales Invoice",
+   "options": "Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "purchase_invoice",
+   "fieldtype": "Link",
+   "label": "Purchase Invoice",
+   "options": "Purchase Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "RA Bill",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [
+  {
+   "group": "Accounting",
+   "link_doctype": "Sales Invoice",
+   "link_fieldname": "ra_bill"
+  },
+  {
+   "group": "Accounting",
+   "link_doctype": "Purchase Invoice",
+   "link_fieldname": "ra_bill"
+  }
+ ],
+ "modified": "2026-06-16 12:00:00",
+ "module": "RA Bill",
+ "name": "RA Bill",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Quantity Surveyor",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Site Engineer",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Project Manager",
+   "share": 1,
+   "submit": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User",
+   "share": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "project"
+}

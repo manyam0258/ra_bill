@@ -1,0 +1,84 @@
+{
+ "actions": [],
+ "creation": "2026-06-15 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "description",
+  "column_break_1",
+  "quantity",
+  "base_rate",
+  "base_index",
+  "current_index",
+  "contractor_share_percent",
+  "escalation_amount"
+ ],
+ "fields": [
+  {
+   "columns": 3,
+   "fieldname": "description",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Component (e.g. Steel, Cement)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "quantity",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Quantity"
+  },
+  {
+   "columns": 1,
+   "fieldname": "base_rate",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Base Rate"
+  },
+  {
+   "columns": 1,
+   "fieldname": "base_index",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Base Index"
+  },
+  {
+   "columns": 1,
+   "fieldname": "current_index",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Current Index"
+  },
+  {
+   "default": "100",
+   "fieldname": "contractor_share_percent",
+   "fieldtype": "Percent",
+   "label": "Contractor Share %"
+  },
+  {
+   "columns": 2,
+   "fieldname": "escalation_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Escalation Amount",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-06-15 00:00:00",
+ "module": "RA Bill",
+ "name": "RA Bill Escalation",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

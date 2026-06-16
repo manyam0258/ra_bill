@@ -1,0 +1,95 @@
+{
+ "actions": [],
+ "creation": "2026-06-15 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "item_type",
+  "original_description",
+  "description",
+  "pricing_basis",
+  "column_break_1",
+  "uom",
+  "quantity",
+  "rate",
+  "amount"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "default": "New Item",
+   "fieldname": "item_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Type",
+   "options": "New Item\nQuantity Change\nSubstitution\nDeletion",
+   "reqd": 1
+  },
+  {
+   "fieldname": "original_description",
+   "fieldtype": "Data",
+   "label": "Original BOQ Item (if any)"
+  },
+  {
+   "columns": 3,
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Description",
+   "reqd": 1
+  },
+  {
+   "default": "Negotiated",
+   "fieldname": "pricing_basis",
+   "fieldtype": "Select",
+   "label": "Pricing Basis",
+   "options": "Contract Rate\nDerived\nMarket\nNegotiated"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "label": "UOM",
+   "options": "UOM"
+  },
+  {
+   "columns": 1,
+   "description": "+ for additions, - for deletions",
+   "fieldname": "quantity",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Qty Change",
+   "reqd": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "rate",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate"
+  },
+  {
+   "columns": 2,
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Amount",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-06-15 00:00:00",
+ "module": "RA Bill",
+ "name": "Variation Order Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

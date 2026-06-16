@@ -1,7 +1,7 @@
 app_name = "ra_bill"
 app_title = "RA Bill"
 app_publisher = "Surendhra"
-app_description = "Running Account Bill (progressive construction billing) for ERPNext — BOQ, measurement, cumulative RA bills, retention, advances, certification workflow."
+app_description = "Running Account Bill (progressive construction billing) for ERPNext — work orders, measurement, cumulative RA bills, retention, advances, certification workflow."
 app_email = "surendhra.erpnext@gmail.com"
 app_license = "mit"
 
@@ -83,7 +83,12 @@ app_license = "mit"
 # ------------
 
 # before_install = "ra_bill.install.before_install"
-# after_install = "ra_bill.install.after_install"
+after_install = "ra_bill.setup.after_install"
+
+# Migration
+# ---------
+before_migrate = "ra_bill.setup.before_migrate"
+after_migrate = "ra_bill.setup.after_migrate"
 
 # Uninstallation
 # ------------

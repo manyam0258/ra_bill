@@ -1,0 +1,192 @@
+{
+ "actions": [],
+ "creation": "2026-06-15 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "boq_item",
+  "item_code",
+  "description",
+  "is_extra_item",
+  "variation_order",
+  "column_break_1",
+  "uom",
+  "rate",
+  "boq_qty",
+  "contract_amount",
+  "section_qty",
+  "previous_qty",
+  "cumulative_qty",
+  "current_qty",
+  "deviation_qty",
+  "previous_percent",
+  "cumulative_percent",
+  "current_percent",
+  "column_break_2",
+  "previous_amount",
+  "current_amount",
+  "cumulative_amount"
+ ],
+ "fields": [
+  {
+   "fieldname": "boq_item",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "BOQ Item Row",
+   "read_only": 1
+  },
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "label": "Item",
+   "options": "Item"
+  },
+  {
+   "columns": 3,
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Description",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_extra_item",
+   "fieldtype": "Check",
+   "label": "Extra / Non-Tendered Item"
+  },
+  {
+   "depends_on": "is_extra_item",
+   "fieldname": "variation_order",
+   "fieldtype": "Link",
+   "label": "Variation Order",
+   "options": "Variation Order"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "label": "UOM",
+   "options": "UOM"
+  },
+  {
+   "columns": 1,
+   "fieldname": "rate",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate",
+   "options": "currency"
+  },
+  {
+   "fieldname": "boq_qty",
+   "fieldtype": "Float",
+   "label": "Work Order Qty",
+   "read_only": 1
+  },
+  {
+   "description": "Line contract value (Work Order Qty x Rate). Base for Percentage / Milestone / Lump Sum billing.",
+   "fieldname": "contract_amount",
+   "fieldtype": "Currency",
+   "label": "Contract Amount",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_qty",
+   "fieldtype": "Section Break"
+  },
+  {
+   "columns": 1,
+   "description": "Cumulative qty billed up to the previous RA Bill",
+   "fieldname": "previous_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Previous Qty",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "description": "Total quantity executed to date (measured)",
+   "fieldname": "cumulative_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Cumulative Qty"
+  },
+  {
+   "columns": 1,
+   "description": "Cumulative - Previous",
+   "fieldname": "current_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "This Bill Qty",
+   "read_only": 1
+  },
+  {
+   "fieldname": "deviation_qty",
+   "fieldtype": "Float",
+   "label": "Deviation vs BOQ",
+   "read_only": 1
+  },
+  {
+   "description": "Cumulative % complete billed in the previous RA Bill (Percentage/Milestone/Lump Sum)",
+   "fieldname": "previous_percent",
+   "fieldtype": "Percent",
+   "label": "Previous %",
+   "read_only": 1
+  },
+  {
+   "description": "Total % complete to date (Percentage/Milestone/Lump Sum methods)",
+   "fieldname": "cumulative_percent",
+   "fieldtype": "Percent",
+   "label": "Cumulative %"
+  },
+  {
+   "fieldname": "current_percent",
+   "fieldtype": "Percent",
+   "label": "This Bill %",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "previous_amount",
+   "fieldtype": "Currency",
+   "label": "Previous Amount",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "current_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "This Bill Amount",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cumulative_amount",
+   "fieldtype": "Currency",
+   "label": "Cumulative Amount",
+   "options": "currency",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-06-15 00:00:00",
+ "module": "RA Bill",
+ "name": "RA Bill Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
