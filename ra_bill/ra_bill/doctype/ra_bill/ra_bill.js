@@ -38,34 +38,101 @@ frappe.ui.form.on("RA Bill", {
 		}
 
 		if (frm.doc.sales_invoice) {
-			frm.add_custom_button(__("Sales Invoice"), () => frappe.set_route("Form", "Sales Invoice", frm.doc.sales_invoice), __("View"));
+			frm.add_custom_button(__("Sales Invoice"), () =>
+				frappe.set_route("Form", "Sales Invoice", frm.doc.sales_invoice),
+				__("View")
+			);
 		}
+
 		if (frm.doc.purchase_invoice) {
-			frm.add_custom_button(__("Purchase Invoice"), () => frappe.set_route("Form", "Purchase Invoice", frm.doc.purchase_invoice), __("View"));
+			frm.add_custom_button(__("Purchase Invoice"), () =>
+				frappe.set_route("Form", "Purchase Invoice", frm.doc.purchase_invoice),
+				__("View")
+			);
+		}
+
+		if (!frm.is_new() && frm.doc.boq) {
+			frm.add_custom_button(__("Get Advances"), function () {
+
+				frappe.call({
+					method: "ra_bill.ra_bill.doctype.ra_bill.ra_bill.get_advances",
+					args: {
+						boq: frm.doc.boq
+					},
+					callback: function (r) {
+
+						if (!r.message || !r.message.length) {
+							frappe.msgprint(
+								__("No pending advance recoveries found for this Work Order.")
+							);
+							return;
+						}
+
+						frm.doc.deductions = (frm.doc.deductions || []).filter(
+							row => row.deduction_type !== "Advance Recovery"
+						);
+
+						r.message.forEach(function (d) {
+
+							let row = frm.add_child("deductions");
+
+							row.deduction_type = "Advance Recovery";
+							row.description = "Advance Recovery";
+							row.method = "Fixed Amount";
+							row.amount = d.balance_amount;
+							row.payment_entry = d.payment_entry;
+
+						});
+
+						frm.refresh_field("deductions");
+						frm_recalc(frm);
+
+					}
+				});
+
+			});
 		}
 	},
-
 	get_items_btn(frm) {
 		if (!frm.doc.boq) {
 			frappe.msgprint(__("Select a Work Order first."));
 			return;
 		}
-		frappe.call({
-			method: "ra_bill.ra_bill.doctype.ra_bill.ra_bill.get_boq_items",
-			args: { boq: frm.doc.boq, previous_ra_bill: frm.doc.previous_ra_bill },
-			callback: (r) => {
-				if (!r.message) return;
-				frm.clear_table("items");
-				r.message.forEach((row) => {
-					const child = frm.add_child("items");
-					Object.assign(child, row);
-				});
-				frm.refresh_field("items");
-				frm_recalc(frm);
-			},
-		});
-	},
 
+		const fetch_items = () => {
+			frappe.call({
+				method: "ra_bill.ra_bill.doctype.ra_bill.ra_bill.get_boq_items",
+				args: { boq: frm.doc.boq, previous_ra_bill: frm.doc.previous_ra_bill },
+				callback: (r) => {
+					if (!r.message) return;
+					frm.clear_table("items");
+					r.message.forEach((row) => {
+						const child = frm.add_child("items");
+						Object.assign(child, row);
+					});
+					frm.refresh_field("items");
+					frm_recalc(frm);
+				},
+			});
+		};
+
+		if (!frm.doc.previous_ra_bill) {
+			frappe.db.get_value(
+				"RA Bill",
+				{ boq: frm.doc.boq, docstatus: 1, name: ["!=", frm.doc.name || ""] },
+				"name",
+				(r) => {
+					if (r && r.name) {
+						frm.set_value("previous_ra_bill", r.name);
+					}
+					fetch_items();
+				},
+				{ order_by: "ra_bill_no desc, creation desc" }
+			);
+		} else {
+			fetch_items();
+		}
+	},
 	get_variation_btn(frm) {
 		if (!frm.doc.boq) {
 			frappe.msgprint(__("Select a Work Order first."));
@@ -88,7 +155,6 @@ frappe.ui.form.on("RA Bill", {
 			},
 		});
 	},
-
 	get_mb_btn(frm) {
 		if (!frm.doc.measurement_book) {
 			frappe.msgprint(__("Select a Measurement Book first."));
@@ -229,12 +295,22 @@ function frm_recalc(frm) {
 	const advBal = flt(frm.doc.advance_balance_before);
 
 	// Deductions carried forward from the Work Order.
-	let cess = 0,
-		retention = 0,
+	let retention = 0,
 		tds = 0,
 		mob = 0,
 		totalDed = 0;
+
+	const descMap = {
+		"Retention": "Retention on Gross Work Value",
+		"TDS": "TDS on Gross Work Value",
+		"Labour Cess": "Labour Cess on Gross Work Value",
+		"Mobilization Recovery": "Mobilization Recovery on Advance Amount"
+	};
+
 	(frm.doc.deductions || []).forEach((d) => {
+		if (descMap[d.deduction_type]) {
+			d.description = descMap[d.deduction_type];
+		}
 		let amt;
 		if (d.method === "Fixed Amount") {
 			amt = flt(d.amount);
@@ -247,12 +323,11 @@ function frm_recalc(frm) {
 		totalDed += amt;
 		if (d.deduction_type === "Retention") retention += amt;
 		else if (d.deduction_type === "TDS") tds += amt;
-		else if (d.deduction_type === "Labour Cess") cess += amt;
 		else if (d.deduction_type === "Mobilization Recovery") mob += amt;
 	});
 
-	const gst = frm.doc.apply_gst ? ((billable + cess) * flt(frm.doc.gst_percentage)) / 100 : 0;
-	const totalInvoice = billable + cess + gst;
+	const gst = frm.doc.apply_gst ? (billable * flt(frm.doc.gst_percentage)) / 100 : 0;
+	const totalInvoice = billable + gst;
 
 	frm.set_value("gross_work_value", gross);
 	frm.set_value("previous_billed_value", prev);
@@ -260,7 +335,6 @@ function frm_recalc(frm) {
 	frm.set_value("escalation_amount", escalation);
 	frm.set_value("additions_total", additions_total);
 	frm.set_value("billable_value", billable);
-	frm.set_value("labour_cess_amount", cess);
 	frm.set_value("gst_amount", gst);
 	frm.set_value("total_invoice_value", totalInvoice);
 	frm.set_value("retention_amount", retention);

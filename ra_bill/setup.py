@@ -45,6 +45,24 @@ def ensure_roles():
 # --------------------------------------------------------------------------- #
 def setup_custom_fields():
 	custom_fields = {
+		"Payment Entry": [
+			{
+				"fieldname": "is_mobilization_advance",
+				"label": "Is Mobilization Advance",
+				"fieldtype": "Check",
+				"default": "0",
+				"insert_after": "payment_type",
+				"read_only": 1,
+			},
+			{
+				"fieldname": "is_adhoc_advance",
+				"label": "Is Ad Hoc Advance",
+				"fieldtype": "Check",
+				"default": "0",
+				"insert_after": "is_mobilization_advance",
+				"read_only": 1,
+			}
+		],
 		"Sales Invoice": [
 			{
 				"fieldname": "ra_bill",
@@ -69,7 +87,36 @@ def setup_custom_fields():
 				"no_copy": 1,
 				"allow_on_submit": 1,
 				"print_hide": 1,
-			}
+			},
+			{
+				"fieldname": "ra_bill_deductions_section",
+				"label": "RA Bill Deductions",
+				"fieldtype": "Section Break",
+				"insert_after": "taxes",
+				"collapsible": 0,
+			},
+			{
+				"fieldname": "ra_bill_deductions",
+				"label": "RA Bill Deductions",
+				"fieldtype": "Table",
+				"options": "RA Bill Deduction",
+				"insert_after": "ra_bill_deductions_section",
+				"read_only": 1,
+			},
+			{
+				"fieldname": "ra_bill_total_deductions",
+				"label": "Total RA Deductions",
+				"fieldtype": "Currency",
+				"insert_after": "ra_bill_deductions",
+				"read_only": 1,
+			},
+			{
+				"fieldname": "ra_bill_net_payment",
+				"label": "Net Payment (Display)",
+				"fieldtype": "Currency",
+				"insert_after": "ra_bill_total_deductions",
+				"read_only": 1,
+			},
 		],
 		"Project": [
 			{

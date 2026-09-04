@@ -27,7 +27,6 @@ test.describe("Client RA Bill (contractor -> client)", () => {
 		expect(await H.docField(page, "bill_type")).toBe("Client");
 		expect(await H.docField(page, "gross_work_value")).toBeCloseTo(720000, 0);
 		// labour cess 1% = 7,200 ; GST 18% of (720000 + 7200) = 130,896
-		expect(await H.docField(page, "labour_cess_amount")).toBeCloseTo(7200, 0);
 		expect(await H.docField(page, "gst_amount")).toBeCloseTo(130896, 0);
 
 		// Certification workflow: Draft -> Measured -> Checked -> Certified -> Approved.

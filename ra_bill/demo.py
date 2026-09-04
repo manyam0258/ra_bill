@@ -305,10 +305,47 @@ def _ensure_item():
 	).insert(ignore_permissions=True)
 
 
-def _ensure_settings():
+def _ensure_settings(company=None):
+	company = company or frappe.db.get_single_value("Global Defaults", "default_company") or frappe.get_all("Company", limit=1, pluck="name")[0]
+	abbr = frappe.get_cached_value("Company", company, "abbr") if company else ""
+
 	settings = frappe.get_single("RA Bill Settings")
+	changed = False
 	if not settings.default_item:
 		settings.default_item = "RA Bill Work"
+		changed = True
+
+	def _get_or_create_acc(name, root_type):
+		full_name = f"{name} - {abbr}" if abbr else name
+		if not frappe.db.exists("Account", full_name):
+			parent = frappe.db.get_value("Account", {"company": company, "root_type": root_type, "is_group": 1}, "name")
+			if parent:
+				acc_type = "Current Asset" if root_type == "Asset" else ""
+				frappe.get_doc({
+					"doctype": "Account",
+					"account_name": name,
+					"company": company,
+					"parent_account": parent,
+					"root_type": root_type,
+					"account_type": acc_type,
+				}).insert(ignore_permissions=True)
+		return full_name if frappe.db.exists("Account", full_name) else None
+
+	if company and abbr:
+		for field, (acc_name, root_type) in {
+			"retention_payable_account": ("Retention Payable", "Liability"),
+			"tds_payable_account": ("TDS Payable", "Liability"),
+			"labour_cess_account": ("Labour Cess Payable", "Liability"),
+			"mobilization_advance_account": ("Mobilization Advance", "Asset"),
+			"advance_recovery_account": ("Advance Recovery", "Asset"),
+		}.items():
+			if not getattr(settings, field, None):
+				acc = _get_or_create_acc(acc_name, root_type)
+				if acc:
+					setattr(settings, field, acc)
+					changed = True
+
+	if changed:
 		settings.save(ignore_permissions=True)
 
 
