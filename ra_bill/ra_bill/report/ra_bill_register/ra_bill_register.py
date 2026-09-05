@@ -40,14 +40,14 @@ def get_data(filters):
 		filters=conditions,
 		fields=[
 			"name", "ra_bill_no", "project", "bill_type", "posting_date",
-			"gross_work_value", "labour_cess_amount", "gst_amount", "total_deductions",
+			"gross_work_value", "gst_amount", "total_deductions",
 			"net_payable", "docstatus", "sales_invoice", "purchase_invoice",
 		],
 		order_by="project asc, ra_bill_no asc",
 	)
 	out = []
 	for r in rows:
-		r["taxes"] = (r.labour_cess_amount or 0) + (r.gst_amount or 0)
+		r["taxes"] = r.gst_amount or 0
 		r["status_label"] = {0: "Draft", 1: "Submitted"}.get(r.docstatus, "Cancelled")
 		if r.sales_invoice:
 			r["invoice"], r["invoice_doctype"] = r.sales_invoice, "Sales Invoice"

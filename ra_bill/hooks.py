@@ -11,15 +11,14 @@ app_license = "mit"
 # required_apps = []
 
 # Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "ra_bill",
-# 		"logo": "/assets/ra_bill/logo.png",
-# 		"title": "RA Bill",
-# 		"route": "/ra_bill",
-# 		"has_permission": "ra_bill.api.permission.has_app_permission"
-# 	}
-# ]
+add_to_apps_screen = [
+	{
+		"name": "ra_bill",
+		"title": "RA Bill",
+		"route": "/ra_bill",
+		"logo": "/assets/ra_bill/images/logo.png",
+	}
+]
 
 # Includes in <head>
 # ------------------
@@ -43,7 +42,10 @@ app_license = "mit"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {
+    "Payment Entry": "public/js/payment_entry.js",
+    "Purchase Invoice": "public/js/purchase_invoice.js"
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -134,21 +136,20 @@ after_migrate = "ra_bill.setup.after_migrate"
 # ---------------
 # Override standard doctype classes
 
-# override_doctype_class = {
+override_doctype_class = {
 # 	"ToDo": "custom_app.overrides.CustomToDo"
-# }
+    "Payment Entry": "ra_bill.overrides.payment_entry.CustomPaymentEntry"
+}
 
 # Document Events
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	"Purchase Invoice": {
+		"validate": "ra_bill.api.purchase_invoice.sync_ra_bill_deductions"
+	}
+}
 
 # Scheduled Tasks
 # ---------------
@@ -179,9 +180,14 @@ after_migrate = "ra_bill.setup.after_migrate"
 # Overriding Methods
 # ------------------------------
 #
-# override_whitelisted_methods = {
+override_whitelisted_methods = {
+    "erpnext.accounts.doctype.payment_entry.payment_entry.get_reference_details":
+        "ra_bill.api.payment_entry.get_reference_details",
+    "erpnext.accounts.doctype.payment_entry.payment_entry.get_payment_entry":
+        "ra_bill.api.payment_entry.get_payment_entry",
+}
 # 	"frappe.desk.doctype.event.event.get_events": "ra_bill.event.get_events"
-# }
+
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
@@ -252,3 +258,5 @@ after_migrate = "ra_bill.setup.after_migrate"
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
+
+website_route_rules = [{'from_route': '/frontend/<path:app_path>', 'to_route': 'frontend'},]

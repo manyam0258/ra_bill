@@ -13,9 +13,11 @@
   "accounts_section",
   "retention_receivable_account",
   "retention_payable_account",
+  "tds_payable_account",
   "column_break_2",
   "mobilization_advance_account",
-  "labour_cess_account"
+  "labour_cess_account",
+  "advance_recovery_account"
  ],
  "fields": [
   {
@@ -70,6 +72,12 @@
    "options": "Account"
   },
   {
+   "fieldname": "tds_payable_account",
+   "fieldtype": "Link",
+   "label": "TDS Payable Account",
+   "options": "Account"
+  },
+  {
    "fieldname": "column_break_2",
    "fieldtype": "Column Break"
   },
@@ -83,6 +91,12 @@
    "fieldname": "labour_cess_account",
    "fieldtype": "Link",
    "label": "Labour Cess Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "advance_recovery_account",
+   "fieldtype": "Link",
+   "label": "Advance Recovery Account",
    "options": "Account"
   }
  ],

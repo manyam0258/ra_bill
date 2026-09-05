@@ -1,0 +1,27 @@
+{
+  "name": "ra_bill",
+  "version": "1.0.0",
+  "description": "Progressive / interim **Running Account (RA) Billing** for the construction & real\u2011estate industry, built on Frappe v15 + ERPNext v15 and integrated with **India Compliance** (GST + TDS). Covers the full lifecycle: **BOQ \u2192 Measurement \u2192 cumulative RA Bills \u2192 retention & advance recoveries \u2192 certification workflow \u2192 GST/TDS invoice**.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "(cd frontend && yarn install)",
+    "build": "(cd frontend && yarn build)",
+    "dev": "(cd frontend && yarn dev)"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/manyam0258/ra_bill.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/manyam0258/ra_bill/issues"
+  },
+  "homepage": "https://github.com/manyam0258/ra_bill#readme"
+}

@@ -213,7 +213,6 @@ test.describe("Client — GST bill and Sales Invoice", () => {
 
 		expect(await H.docField(page, "bill_type")).toBe("Client");
 		expect(await H.docField(page, "gross_work_value")).toBeCloseTo(720000, 0);
-		expect(await H.docField(page, "labour_cess_amount")).toBeCloseTo(7200, 0); // 1%
 		// GST 18% on (720,000 + 7,200 cess) = 130,896
 		expect(await H.docField(page, "gst_amount")).toBeCloseTo(130896, 0);
 

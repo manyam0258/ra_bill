@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "autoname": "naming_series:",
  "creation": "2026-06-15 00:00:00",
  "doctype": "DocType",
@@ -42,7 +43,6 @@
   "cumulative_work_value",
   "billable_value",
   "column_break_2",
-  "labour_cess_amount",
   "apply_gst",
   "gst_percentage",
   "gst_amount",
@@ -321,13 +321,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "labour_cess_amount",
-   "fieldtype": "Currency",
-   "label": "Labour Cess Amount",
-   "options": "currency",
-   "read_only": 1
-  },
-  {
    "default": "1",
    "fieldname": "apply_gst",
    "fieldtype": "Check",
@@ -508,9 +501,11 @@
    "link_fieldname": "ra_bill"
   }
  ],
- "modified": "2026-06-16 12:00:00",
+ "modified": "2026-08-22 16:28:03.681281",
+ "modified_by": "Administrator",
  "module": "RA Bill",
  "name": "RA Bill",
+ "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {
@@ -558,7 +553,8 @@
    "report": 1,
    "role": "Project Manager",
    "share": 1,
-   "submit": 1
+   "submit": 1,
+   "write": 1
   },
   {
    "email": 1,
@@ -569,6 +565,7 @@
    "share": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
