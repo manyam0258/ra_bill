@@ -12,42 +12,23 @@ import {
 	Receipt,
 	RefreshCw,
 	FileWarning,
+	Lightbulb,
 } from "lucide-react";
 
-function getFrappeCSRFToken(): string {
-	const fromFrappe = (window as any).frappe?.csrf_token;
-	if (fromFrappe && fromFrappe !== "Guest") return fromFrappe;
-	const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
-	if (match) return decodeURIComponent(match[1]);
-	return "";
-}
-
-async function callFrappeMethod(method: string, args: Record<string, any>) {
-	const response = await fetch(`/api/method/${method}`, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-			"X-Frappe-CSRF-Token": getFrappeCSRFToken(),
-		},
-		body: JSON.stringify(args),
-	});
-	if (!response.ok) {
-		const errText = await response.text();
-		let detail = errText;
-		try {
-			const parsed = JSON.parse(errText);
-			detail = parsed?.exception || parsed?.message || parsed?.exc || errText;
-		} catch (_) {}
-		throw new Error(`Frappe API Error: ${detail}`);
-	}
-	const json = await response.json();
-	if (json._error_message || json.exc) {
-		throw new Error(json._error_message || json.exc);
-	}
-	return json.message ?? json;
-}
+import { callFrappeMethod, parseFrappeError, getFrappeCSRFToken } from "../utils/frappeErrors";
 
 const exportFieldMaps: Record<string, Record<string, string[]>> = {
+	"Item": {
+		"Item": [
+			"item_code",
+			"item_name",
+			"item_group",
+			"gst_hsn_code",
+			"stock_uom",
+			"is_stock_item",
+			"is_fixed_asset",
+		],
+	},
 	"RA Bill": {
 		"RA Bill": [
 			"naming_series",
@@ -76,14 +57,14 @@ const exportFieldMaps: Record<string, Record<string, string[]>> = {
 		additions: [
 			"addition_type",
 			"description",
-			"calculation_method",
+			"method",
 			"rate",
 			"amount",
 		],
 		deductions: [
 			"deduction_type",
 			"description",
-			"calculation_method",
+			"method",
 			"rate",
 			"amount",
 		],
@@ -118,14 +99,14 @@ const exportFieldMaps: Record<string, Record<string, string[]>> = {
 		additions: [
 			"addition_type",
 			"description",
-			"calculation_method",
+			"method",
 			"rate",
 			"amount",
 		],
 		deductions: [
 			"deduction_type",
 			"description",
-			"calculation_method",
+			"method",
 			"rate",
 			"amount",
 		],
@@ -250,6 +231,7 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 	const [importError, setImportError] = useState<string | null>(null);
 
 	const docTypes = [
+		{ id: "Item", label: "Item Master" },
 		{ id: "RA Bill", label: "RA Bill" },
 		{ id: "RAB Work Order", label: "RAB Work Order" },
 		{ id: "Purchase Invoice", label: "Purchase Invoice" },
@@ -431,7 +413,8 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 			setProcessStage("");
 		} catch (err: any) {
 			console.error("Data Import execution error:", err);
-			setImportError(err.message || String(err));
+			const parsed = parseFrappeError(err, "Data Import Error");
+			setImportError(parsed.message);
 			setProcessStage("");
 		} finally {
 			setIsProcessing(false);
@@ -497,12 +480,25 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 						</div>
 					</div>
 
+					{/* Recommended Workflow Guidance */}
+					<div className="p-3.5 bg-indigo-50/70 dark:bg-[#7367f0]/10 border border-indigo-200/80 dark:border-[#7367f0]/30 rounded-xl flex items-start gap-3">
+						<div className="p-1.5 bg-indigo-600/10 dark:bg-[#7367f0]/20 rounded-lg text-indigo-600 dark:text-[#7367f0] shrink-0 mt-0.5">
+							<Lightbulb size={16} />
+						</div>
+						<div className="text-xs">
+							<span className="font-bold text-indigo-900 dark:text-indigo-200">Recommended Sequence: </span>
+							<span className="text-slate-600 dark:text-slate-300">
+								Import your <strong>Item Master</strong> first if these items don't already exist in the system, before importing Work Order or RA Bill records that reference them.
+							</span>
+						</div>
+					</div>
+
 					{/* 1. Document Type Selector */}
 					<div className="space-y-3">
 						<label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-[#8f93a7]">
 							1. Target Document Type
 						</label>
-						<div className="grid grid-cols-2 gap-3">
+						<div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
 							{docTypes.map((dt) => (
 								<button
 									key={dt.id}

@@ -884,12 +884,18 @@ class TestRABill(FrappeTestCase):
 		self.assertEqual(flt(mob_row.amount), 2000.0)  # 20% of 10,000 = 2,000
 		ra.submit()
 
-		# Test 8: Recovery capped at remaining balance
+		# Test 8: Recovery exceeding balance is blocked; corrected rate succeeds
 		ra_cap = self._ra(wo, previous=ra.name)
 		ra_cap._cumulative_mobilization_recovered = lambda *args, **kwargs: 9500.0
-		ra_cap.save()
+		# 20% of 10,000 = 2,000 > remaining 500 -> must raise ValidationError
+		self.assertRaises(frappe.ValidationError, ra_cap.save)
+		# Correct rate to 5% (5% of 10,000 = 500) -> succeeds with 500
+		ra_cap.reload()
+		ra_cap._cumulative_mobilization_recovered = lambda *args, **kwargs: 9500.0
 		mob_row_cap = next((d for d in ra_cap.deductions if d.deduction_type == "Mobilization Recovery"), None)
-		self.assertEqual(flt(mob_row_cap.amount), 500.0)  # Capped at remaining 500
+		mob_row_cap.rate = 5.0
+		ra_cap.save()
+		self.assertEqual(flt(mob_row_cap.amount), 500.0)
 
 	def test_cancelled_advance_exclusion(self):
 		from ra_bill.demo import _ensure_item, _ensure_settings

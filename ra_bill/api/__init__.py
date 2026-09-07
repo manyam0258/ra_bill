@@ -389,6 +389,14 @@ def submit_document(doctype: str, name: str):
 			)
 		)
 
+	if hasattr(doc, "ensure_child_methods"):
+		doc.ensure_child_methods()
+	elif doctype in ("RA Bill", "RAB Work Order"):
+		for table_field in ("deductions", "additions"):
+			for row in getattr(doc, table_field, []):
+				if not getattr(row, "method", None):
+					row.method = getattr(row, "calculation_method", None) or "Percentage"
+
 	doc.submit()
 	return doc.as_dict()
 
@@ -404,3 +412,21 @@ def save_document(doc):
 	d = frappe.get_doc(doc)
 	d.save()
 	return d.as_dict()
+
+
+@frappe.whitelist()
+def get_work_order_advances(work_order: str = None):
+	"""
+	Returns advances from RAB Work Order Advance child table.
+	Child tables cannot be queried via frappe.client.get_list (which throws PermissionError).
+	This whitelisted endpoint safely provides access to work order advances.
+	"""
+	filters = {"parenttype": "RAB Work Order"}
+	if work_order:
+		filters["parent"] = work_order
+	return frappe.get_all(
+		"RAB Work Order Advance",
+		filters=filters,
+		fields=["name", "parent", "advance_type", "description", "amount", "payment_entry"],
+		order_by="idx asc",
+	)

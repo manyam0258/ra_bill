@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import * as XLSX from "xlsx";
 import { RABWorkOrderLedgerView } from "./components/RABWorkOrderLedgerView";
 import { RABillDetail } from "./components/RABillDetail";
 import { RABInvoiceDetail } from "./components/RABInvoiceDetail";
@@ -13,6 +14,7 @@ import {
 	useFrappeGetDocList,
 	useFrappeGetDoc,
 	useFrappeCreateDoc,
+	useFrappeGetCall,
 } from "frappe-react-sdk";
 import {
 	LayoutDashboard,
@@ -62,23 +64,7 @@ const formatCurrency = (amount: number | undefined | null, currency = "INR") => 
 	}).format(Math.abs(amount));
 	return isNegative ? `- ${formatted}` : formatted;
 };
-
-async function callFrappeMethod(method: string, args: Record<string, any>) {
-	const response = await fetch(`/api/method/${method}`, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-			"X-Frappe-CSRF-Token": (window as any).frappe?.csrf_token || "",
-		},
-		body: JSON.stringify(args),
-	});
-	if (!response.ok) {
-		const errText = await response.text();
-		throw new Error(`Frappe API Error: ${errText}`);
-	}
-	const json = await response.json();
-	return json.message || json;
-}
+import { callFrappeMethod, parseFrappeError } from "./utils/frappeErrors";
 
 // Official TRIDASA® Brand Logo Component (Dual Light / Dark Mode)
 const TridasaLogo = ({ className = "" }: { className?: string }) => (
@@ -190,18 +176,22 @@ export function PortalApp() {
 	});
 
 	// Fetch all advances across all Work Orders to ensure all advance types are accounted for
+	// Uses whitelisted backend endpoint to avoid PermissionError on child table frappe.client.get_list
 	const {
-		data: allAdvances,
+		data: allAdvancesRes,
 		mutate: refreshAdvances,
-	} = useFrappeGetDocList("RAB Work Order Advance", {
-		fields: ["name", "parent", "advance_type", "description", "amount", "payment_entry"],
-		limit: 0,
-	});
+	} = useFrappeGetCall<any>("ra_bill.api.get_work_order_advances");
+
+	const allAdvances: any[] = useMemo(() => {
+		if (Array.isArray(allAdvancesRes)) return allAdvancesRes;
+		if (Array.isArray(allAdvancesRes?.message)) return allAdvancesRes.message;
+		return [];
+	}, [allAdvancesRes]);
 
 	// Index advances by parent Work Order name
 	const advancesByWO = useMemo(() => {
 		const map: Record<string, any[]> = {};
-		(allAdvances || []).forEach((adv: any) => {
+		allAdvances.forEach((adv: any) => {
 			if (adv.parent) {
 				if (!map[adv.parent]) map[adv.parent] = [];
 				map[adv.parent].push(adv);
@@ -862,7 +852,8 @@ function RABWorkOrderDetail({
 				});
 				mutateWO();
 			} catch (e2: any) {
-				alert("Submit failed: " + (err.message || e2.message));
+				const parsed = parseFrappeError(err || e2, "Submit Failed");
+				alert("Submit failed: " + parsed.message);
 			}
 		} finally {
 			setIsSubmitting(false);
@@ -877,22 +868,63 @@ function RABWorkOrderDetail({
 			let initialDeductions = [...(wo.deductions || [])];
 			if (woAdvList.length > 0) {
 				initialDeductions = initialDeductions.filter(
-					(d: any) => d.deduction_type !== "Mobilization Recovery" && d.deduction_type !== "Mobilization Advance"
+					(d: any) =>
+						d.deduction_type !== "Mobilization Recovery" &&
+						d.deduction_type !== "Advance Recovery" &&
+						!(d.deduction_type === "Other" && (d.description?.toLowerCase().includes("advance") || d.description?.startsWith("Other -")))
 				);
 				woAdvList.forEach((adv: any) => {
-					const label = adv.advance_type === "Mobilization Advance"
-						? "Mobilization Advance Recovery"
-						: adv.advance_type === "Ad Hoc Advance"
-						? "Ad Hoc Advance Recovery"
-						: `Other - ${adv.description || "Advance"}`;
+					let deductionType = "Other";
+					let description = adv.description ? `Other - ${adv.description}` : "Other Advance";
+					if (adv.advance_type === "Mobilization Advance") {
+						deductionType = "Mobilization Recovery";
+						description = "Mobilization Advance";
+					} else if (adv.advance_type === "Ad Hoc Advance") {
+						deductionType = "Advance Recovery";
+						description = "Ad Hoc Advance";
+					}
 					initialDeductions.push({
-						deduction_type: label,
-						description: label,
+						deduction_type: deductionType,
+						description: description,
+						method: "Percentage",
 						calculation_method: "Percentage",
 						rate: 20,
 						amount: 0,
 					});
 				});
+			}
+
+			let seededItems: any[] = [];
+			try {
+				const boqRes = await callFrappeMethod("ra_bill.ra_bill.doctype.ra_bill.ra_bill.get_boq_items", {
+					boq: wo.name,
+				});
+				const list = Array.isArray(boqRes?.message) ? boqRes.message : (Array.isArray(boqRes) ? boqRes : []);
+				if (list.length > 0) {
+					seededItems = list.map((it: any) => ({
+						boq_item: it.boq_item || it.name,
+						item_code: it.item_code,
+						description: it.description,
+						uom: it.uom,
+						rate: it.rate,
+						boq_qty: Number(it.boq_qty ?? 0),
+						previous_qty: Number(it.previous_qty || 0),
+						cumulative_qty: Number(it.cumulative_qty || it.previous_qty || 0),
+					}));
+				}
+			} catch (_) {}
+
+			if (seededItems.length === 0) {
+				seededItems = wo.items?.map((it: any) => ({
+					boq_item: it.name,
+					item_code: it.item_code,
+					description: it.description,
+					uom: it.uom,
+					rate: it.rate,
+					boq_qty: Number(it.boq_qty ?? it.qty ?? 0),
+					previous_qty: 0,
+					cumulative_qty: 0,
+				})) || [];
 			}
 
 			const res = await callFrappeMethod("frappe.client.insert", {
@@ -905,15 +937,7 @@ function RABWorkOrderDetail({
 					supplier: wo.supplier,
 					customer: wo.customer,
 					posting_date: new Date().toISOString().split("T")[0],
-					items:
-						wo.items?.map((it: any) => ({
-							item_code: it.item_code,
-							description: it.description,
-							uom: it.uom,
-							rate: it.rate,
-							boq_qty: Number(it.boq_qty ?? it.qty ?? 0),
-							cumulative_qty: 0,
-						})) || [],
+					items: seededItems,
 					deductions: initialDeductions,
 					additions: wo.additions || [],
 				},
@@ -925,7 +949,8 @@ function RABWorkOrderDetail({
 				onSelectBill(res.name);
 			}
 		} catch (err: any) {
-			const rawMsg: string = err?.message || String(err);
+			const parsed = parseFrappeError(err, "Create RA Bill Failed");
+			const rawMsg: string = parsed.message;
 			if (
 				rawMsg.includes("fully billed") ||
 				rawMsg.includes("No further RA Bills") ||
@@ -987,7 +1012,8 @@ function RABWorkOrderDetail({
 			mutateWO();
 			onAdvancesUpdated?.();
 		} catch (err: any) {
-			alert("Failed to save advance: " + (err.message || String(err)));
+			const parsed = parseFrappeError(err, "Save Advance Failed");
+			alert("Failed to save advance: " + parsed.message);
 		} finally {
 			setIsCreatingAdvance(false);
 		}
@@ -1148,7 +1174,8 @@ function RABWorkOrderDetail({
 			mutateWO();
 			onNavigateToPE();
 		} catch (err: any) {
-			setPeError(err.message || String(err));
+			const parsed = parseFrappeError(err, "Create Payment Entry Failed");
+			setPeError(parsed.message);
 		} finally {
 			setIsSubmittingPE(false);
 		}
@@ -1833,14 +1860,15 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 	const [deductions, setDeductions] = useState<Array<{
 		deduction_type: string;
 		description: string;
+		method?: string;
 		calculation_method: string;
 		rate: number;
 		amount: number;
 	}>>([
-		{ deduction_type: "Retention", description: "Retention Money Deduction", calculation_method: "Percentage", rate: 5, amount: 0 },
-		{ deduction_type: "TDS", description: "Tax Deducted at Source", calculation_method: "Percentage", rate: 2, amount: 0 },
-		{ deduction_type: "Labour Cess", description: "BOCW Labour Welfare Cess", calculation_method: "Percentage", rate: 1, amount: 0 },
-		{ deduction_type: "Mobilization Recovery", description: "Mobilization Advance Recovery", calculation_method: "Percentage", rate: 20, amount: 0 },
+		{ deduction_type: "Retention", description: "Retention Money Deduction", method: "Percentage", calculation_method: "Percentage", rate: 5, amount: 0 },
+		{ deduction_type: "TDS", description: "Tax Deducted at Source", method: "Percentage", calculation_method: "Percentage", rate: 2, amount: 0 },
+		{ deduction_type: "Labour Cess", description: "BOCW Labour Welfare Cess", method: "Percentage", calculation_method: "Percentage", rate: 1, amount: 0 },
+		{ deduction_type: "Mobilization Recovery", description: "Mobilization Advance Recovery", method: "Percentage", calculation_method: "Percentage", rate: 20, amount: 0 },
 	]);
 
 	const { data: projectList } = useFrappeGetDocList("Project", { fields: ["name", "project_name"], limit: 0 });
@@ -1879,49 +1907,131 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 	};
 
 	const handleDownloadCSVTemplate = () => {
-		const headers = "Item Code,Description,UOM,Qty,Rate,Amount\n";
-		const rowsData = items.length > 0
-			? items.map(i => `"${i.item_code}","${i.description}","${i.uom}",${i.qty},${i.rate},${i.qty * i.rate}`).join("\n")
-			: '"ITEM-001","Civil excavation work","Cum",100,250,25000\n"ITEM-002","PCC 1:4:8 concrete work","Cum",50,4500,225000';
-		const blob = new Blob([headers + rowsData], { type: "text/csv;charset=utf-8;" });
+		const sampleData = items.length > 0
+			? items.map(i => ({
+				"Item Code": i.item_code,
+				"Description": i.description,
+				"UOM": i.uom || "Nos",
+				"Qty": Number(i.qty || 0),
+				"Rate": Number(i.rate || 0),
+				"Amount": Number(i.qty || 0) * Number(i.rate || 0),
+			}))
+			: [
+				{ "Item Code": "ITEM-001", "Description": "Civil excavation work", "UOM": "Cum", "Qty": 100, "Rate": 250, "Amount": 25000 },
+				{ "Item Code": "ITEM-002", "Description": "PCC 1:4:8 concrete work", "UOM": "Cum", "Qty": 50, "Rate": 4500, "Amount": 225000 },
+			];
+		const ws = XLSX.utils.json_to_sheet(sampleData);
+		const wb = XLSX.utils.book_new();
+		XLSX.utils.book_append_sheet(wb, ws, "Schedule of Items");
+		const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+		const blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
 		const url = URL.createObjectURL(blob);
 		const link = document.createElement("a");
 		link.href = url;
-		link.setAttribute("download", "work_order_items_template.csv");
+		link.setAttribute("download", "work_order_items_template.xlsx");
 		document.body.appendChild(link);
 		link.click();
 		document.body.removeChild(link);
+		URL.revokeObjectURL(url);
 	};
 
 	const handleUploadCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
-		const reader = new FileReader();
-		reader.onload = (evt) => {
-			const text = evt.target?.result as string;
-			if (!text) return;
-			const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
-			if (lines.length <= 1) return;
-			const parsedItems: any[] = [];
-			for (let i = 1; i < lines.length; i++) {
-				const cols = lines[i].split(",").map(c => c.replace(/^"|"$/g, "").trim());
-				if (cols.length >= 3) {
-					const item_code = cols[0] || "";
-					const description = cols[1] || item_code;
-					const uom = cols[2] || "Nos";
-					const qty = Number(cols[3] || 0);
-					const rate = Number(cols[4] || 0);
-					const amount = qty * rate;
-					if (item_code || description) {
-						parsedItems.push({ item_code, description, uom, qty, rate, amount });
+
+		const isExcel = file.name.toLowerCase().endsWith(".xlsx") || file.name.toLowerCase().endsWith(".xls");
+
+		const mapRowObj = (rowObj: Record<string, any>) => {
+			const keys = Object.keys(rowObj);
+			const findVal = (matchers: string[]) => {
+				for (const key of keys) {
+					const norm = key.toLowerCase().replace(/[^a-z0-9]/g, "");
+					if (matchers.some((m) => norm === m || norm.includes(m))) {
+						return rowObj[key];
 					}
 				}
+				return undefined;
+			};
+
+			const item_code = String(findVal(["itemcode", "code", "item"]) ?? "").trim();
+			const description = String(findVal(["description", "desc", "itemdescription", "itemname"]) ?? "").trim() || item_code;
+			const uom = String(findVal(["uom", "unit"]) ?? "").trim() || "Nos";
+			const qty = Number(findVal(["workorderqty", "boqqty", "quantity", "qty"]) ?? 0);
+			const rate = Number(findVal(["unitrate", "rate", "price"]) ?? 0);
+			const amount = qty * rate;
+
+			if (item_code || description) {
+				return { item_code, description, uom, qty, rate, amount };
 			}
-			if (parsedItems.length > 0) {
-				setItems((prev) => [...prev, ...parsedItems]);
-			}
+			return null;
 		};
-		reader.readAsText(file);
+
+		if (isExcel) {
+			const reader = new FileReader();
+			reader.onload = (evt) => {
+				try {
+					const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+					const wb = XLSX.read(data, { type: "array" });
+					const wsName = wb.SheetNames[0];
+					const ws = wb.Sheets[wsName];
+					const jsonRows = XLSX.utils.sheet_to_json<Record<string, any>>(ws, { defval: "" });
+
+					const parsedItems = jsonRows.map(mapRowObj).filter((it): it is NonNullable<typeof it> => it !== null);
+					if (parsedItems.length > 0) {
+						setItems((prev) => [...prev, ...parsedItems]);
+					} else {
+						alert("No valid item rows found in the uploaded Excel file.");
+					}
+				} catch (err: any) {
+					console.error("Error parsing Excel file:", err);
+					alert("Failed to parse Excel file: " + (err.message || String(err)));
+				}
+			};
+			reader.readAsArrayBuffer(file);
+		} else {
+			const reader = new FileReader();
+			reader.onload = (evt) => {
+				try {
+					const text = evt.target?.result as string;
+					if (!text) return;
+					const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+					if (lines.length <= 1) return;
+
+					const headers = lines[0].split(",").map((c) => c.replace(/^"|"$/g, "").trim());
+					const parsedItems: any[] = [];
+					for (let i = 1; i < lines.length; i++) {
+						const cols = lines[i].split(",").map((c) => c.replace(/^"|"$/g, "").trim());
+						const rowObj: Record<string, any> = {};
+						headers.forEach((h, idx) => {
+							rowObj[h] = cols[idx];
+						});
+						const mapped = mapRowObj(rowObj);
+						if (mapped) {
+							parsedItems.push(mapped);
+						} else if (cols.length >= 3) {
+							const item_code = cols[0] || "";
+							const description = cols[1] || item_code;
+							const uom = cols[2] || "Nos";
+							const qty = Number(cols[3] || 0);
+							const rate = Number(cols[4] || 0);
+							const amount = qty * rate;
+							if (item_code || description) {
+								parsedItems.push({ item_code, description, uom, qty, rate, amount });
+							}
+						}
+					}
+					if (parsedItems.length > 0) {
+						setItems((prev) => [...prev, ...parsedItems]);
+					} else {
+						alert("No valid item rows found in the uploaded CSV.");
+					}
+				} catch (err: any) {
+					console.error("Error parsing CSV file:", err);
+					alert("Failed to parse CSV file: " + (err.message || String(err)));
+				}
+			};
+			reader.readAsText(file);
+		}
 		e.target.value = "";
 	};
 
@@ -1968,20 +2078,28 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 			apply_gst: applyGst ? 1 : 0,
 			gst_percentage: applyGst ? Number(gstPercentage) : 0,
 			mobilization_payment_entry: mobilizationPE,
-			additions: additions.map((a) => ({
-				addition_type: a.addition_type,
-				description: a.description,
-				calculation_method: a.calculation_method,
-				rate: Number(a.rate),
-				amount: Number(a.amount),
-			})),
-			deductions: deductions.map((d) => ({
-				deduction_type: d.deduction_type,
-				description: d.description,
-				calculation_method: d.calculation_method,
-				rate: Number(d.rate),
-				amount: Number(d.amount),
-			})),
+			additions: additions.map((a) => {
+				const m = (a as any).method || a.calculation_method || "Percentage";
+				return {
+					addition_type: a.addition_type,
+					description: a.description,
+					method: m,
+					calculation_method: m,
+					rate: Number(a.rate),
+					amount: Number(a.amount),
+				};
+			}),
+			deductions: deductions.map((d) => {
+				const m = (d as any).method || d.calculation_method || "Percentage";
+				return {
+					deduction_type: d.deduction_type,
+					description: d.description,
+					method: m,
+					calculation_method: m,
+					rate: Number(d.rate),
+					amount: Number(d.amount),
+				};
+			}),
 		};
 
 		try {
@@ -2171,7 +2289,7 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 				<input
 					ref={fileInputRef}
 					type="file"
-					accept=".csv"
+					accept=".csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
 					onChange={handleUploadCSV}
 					className="hidden"
 				/>

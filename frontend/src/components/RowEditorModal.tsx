@@ -1,14 +1,12 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { ItemLinkDropdown } from "./ItemLinkDropdown";
 import {
 	Trash2,
-	Plus,
 	Copy,
 	X,
 	Check,
 	ArrowUp,
 	ArrowDown,
-	FileText,
 } from "lucide-react";
 
 export interface RowEditorModalProps {
@@ -60,6 +58,7 @@ export function RowEditorModal({
 				const prevQty = Number(updated.previous_qty || 0);
 				updated.this_bill_amount = thisBillQty * rate;
 				updated.cumulative_qty = prevQty + thisBillQty;
+				updated.current_qty = thisBillQty;
 				updated.amount = updated.this_bill_amount;
 			}
 		}
@@ -292,7 +291,8 @@ export function RowEditorModal({
 										type="number"
 										value={(Number(row.previous_qty || 0) + Number(row.this_bill_qty || 0))}
 										readOnly
-										className="w-full p-2.5 bg-slate-100 dark:bg-[#1e1e2d] border border-slate-200 dark:border-[#2d2d3f] rounded-xl font-mono text-slate-700 dark:text-slate-300"
+										disabled
+										className="w-full p-2.5 bg-slate-100 dark:bg-[#1e1e2d] border border-slate-200 dark:border-[#2d2d3f] rounded-xl font-mono text-slate-700 dark:text-slate-300 cursor-not-allowed opacity-90"
 									/>
 								</div>
 							</div>

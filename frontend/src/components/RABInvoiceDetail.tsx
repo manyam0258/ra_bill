@@ -25,39 +25,7 @@ const formatCurrency = (amount: number | undefined | null, currency = "INR") => 
 	}).format(Math.abs(amount));
 	return isNegative ? `- ${formatted}` : formatted;
 };
-
-function getFrappeCSRFToken(): string {
-	const fromFrappe = (window as any).frappe?.csrf_token;
-	if (fromFrappe && fromFrappe !== "Guest") return fromFrappe;
-	const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
-	if (match) return decodeURIComponent(match[1]);
-	return "";
-}
-
-async function callFrappeMethod(method: string, args: Record<string, any>) {
-	const response = await fetch(`/api/method/${method}`, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-			"X-Frappe-CSRF-Token": getFrappeCSRFToken(),
-		},
-		body: JSON.stringify(args),
-	});
-	if (!response.ok) {
-		const errText = await response.text();
-		let detail = errText;
-		try {
-			const parsed = JSON.parse(errText);
-			detail = parsed?.exception || parsed?.message || parsed?.exc || errText;
-		} catch (_) { }
-		throw new Error(`Frappe API Error: ${detail}`);
-	}
-	const json = await response.json();
-	if (json._error_message || json.exc) {
-		throw new Error(json._error_message || json.exc);
-	}
-	return json.message ?? json;
-}
+import { callFrappeMethod, parseFrappeError } from "../utils/frappeErrors";
 
 interface RABInvoiceDetailProps {
 	invoiceId: string;
@@ -124,7 +92,8 @@ export function RABInvoiceDetail({ invoiceId, onBack, onSelectPaymentEntry }: RA
 				}
 			}
 		} catch (err: any) {
-			alert("Submit Invoice failed: " + (err.message || err));
+			const parsed = parseFrappeError(err, "Submit Invoice Failed");
+			alert(parsed.message);
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -221,7 +190,8 @@ export function RABInvoiceDetail({ invoiceId, onBack, onSelectPaymentEntry }: RA
 			}
 			fetchLinkedPEs();
 		} catch (err: any) {
-			setPeErrorInv(err.message || String(err));
+			const parsed = parseFrappeError(err, "Payment Entry Creation Failed");
+			setPeErrorInv(parsed.message);
 		} finally {
 			setIsSubmittingPEInv(false);
 		}
@@ -277,10 +247,10 @@ export function RABInvoiceDetail({ invoiceId, onBack, onSelectPaymentEntry }: RA
 						<div className="flex items-center gap-2.5">
 							<h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{doc.name}</h2>
 							<span className={`px-3 py-0.5 rounded-full text-xs font-bold ${outstandingAmount === 0 || doc.status === "Paid"
-									? "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30"
-									: doc.status === "Overdue"
-										? "bg-rose-500/15 text-rose-600 border border-rose-500/30"
-										: "bg-amber-500/15 text-amber-600 border border-amber-500/30"
+								? "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30"
+								: doc.status === "Overdue"
+									? "bg-rose-500/15 text-rose-600 border border-rose-500/30"
+									: "bg-amber-500/15 text-amber-600 border border-amber-500/30"
 								}`}>
 								{doc.status || (outstandingAmount === 0 ? "Paid" : "Unpaid")}
 							</span>
@@ -328,8 +298,8 @@ export function RABInvoiceDetail({ invoiceId, onBack, onSelectPaymentEntry }: RA
 						key={tab}
 						onClick={() => setActiveSubTab(tab)}
 						className={`px-4 py-2 rounded-xl font-bold uppercase tracking-wider transition ${activeSubTab === tab
-								? "bg-indigo-600 dark:bg-[#7367f0] text-white shadow-xs"
-								: "text-slate-600 dark:text-[#8f93a7] hover:bg-slate-100 dark:hover:bg-[#1e1e2d]"
+							? "bg-indigo-600 dark:bg-[#7367f0] text-white shadow-xs"
+							: "text-slate-600 dark:text-[#8f93a7] hover:bg-slate-100 dark:hover:bg-[#1e1e2d]"
 							}`}
 					>
 						{tab.replace("_", " ")}

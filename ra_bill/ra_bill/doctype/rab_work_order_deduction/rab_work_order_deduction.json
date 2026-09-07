@@ -18,9 +18,10 @@
   {
    "columns": 2,
    "fieldname": "deduction_type",
-   "fieldtype": "Data",
+   "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Deduction Type",
+   "options": "Retention\nTDS\nLabour Cess\nMobilization Recovery\nLiquidated Damages\nClient Material Recovery\nWater / Electricity\nAdvance Recovery\nOther",
    "reqd": 1
   },
   {

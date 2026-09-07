@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useFrappeGetDocList } from "frappe-react-sdk";
-import { Search, ChevronDown, Check, Building2, User } from "lucide-react";
+import { Search, ChevronDown, Check, Building2, User, Layers, Scale } from "lucide-react";
 
 interface DocLinkDropdownProps {
-	doctype: "Supplier" | "Customer" | "Project";
+	doctype: "Supplier" | "Customer" | "Project" | "Item Group" | "UOM";
 	value: string;
 	onChange: (value: string) => void;
 	placeholder?: string;
@@ -15,7 +15,6 @@ export function DocLinkDropdown({
 	value,
 	onChange,
 	placeholder = `Select or search ${doctype}...`,
-	required = false,
 }: DocLinkDropdownProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
@@ -25,6 +24,8 @@ export function DocLinkDropdown({
 		Supplier: ["name", "supplier_name", "supplier_group"],
 		Customer: ["name", "customer_name", "customer_group"],
 		Project: ["name", "project_name"],
+		"Item Group": ["name", "item_group_name", "parent_item_group"],
+		UOM: ["name", "uom_name"],
 	};
 
 	const { data: rawList, isLoading } = useFrappeGetDocList(doctype, {
@@ -49,8 +50,8 @@ export function DocLinkDropdown({
 		const q = searchQuery.toLowerCase();
 		return list.filter((it) => {
 			const name = String(it.name || "").toLowerCase();
-			const title = String(it.supplier_name || it.customer_name || it.project_name || "").toLowerCase();
-			const group = String(it.supplier_group || it.customer_group || "").toLowerCase();
+			const title = String(it.supplier_name || it.customer_name || it.project_name || it.item_group_name || it.uom_name || "").toLowerCase();
+			const group = String(it.supplier_group || it.customer_group || it.parent_item_group || "").toLowerCase();
 			return name.includes(q) || title.includes(q) || group.includes(q);
 		});
 	}, [rawList, searchQuery]);
@@ -66,7 +67,14 @@ export function DocLinkDropdown({
 		setSearchQuery("");
 	};
 
-	const Icon = doctype === "Customer" ? User : Building2;
+	const Icon = doctype === "Customer" ? User : doctype === "Item Group" ? Layers : doctype === "UOM" ? Scale : Building2;
+
+	const formatSelectedText = () => {
+		if (!selectedDoc) return value || placeholder;
+		const title = selectedDoc.supplier_name || selectedDoc.customer_name || selectedDoc.project_name || selectedDoc.item_group_name || selectedDoc.uom_name || selectedDoc.name;
+		if (title === selectedDoc.name) return selectedDoc.name;
+		return `${title} (${selectedDoc.name})`;
+	};
 
 	return (
 		<div className="relative w-full" ref={containerRef}>
@@ -87,9 +95,7 @@ export function DocLinkDropdown({
 								: "text-slate-400 dark:text-[#8f93a7]"
 						}`}
 					>
-						{selectedDoc
-							? `${selectedDoc.supplier_name || selectedDoc.customer_name || selectedDoc.project_name || selectedDoc.name} (${selectedDoc.name})`
-							: value || placeholder}
+						{formatSelectedText()}
 					</span>
 				</div>
 				<ChevronDown size={14} className="text-slate-400 shrink-0 ml-1" />
@@ -117,8 +123,8 @@ export function DocLinkDropdown({
 						) : (
 							filteredItems.map((it: any) => {
 								const isSelected = it.name === value;
-								const title = it.supplier_name || it.customer_name || it.project_name || it.name;
-								const group = it.supplier_group || it.customer_group;
+								const title = it.supplier_name || it.customer_name || it.project_name || it.item_group_name || it.uom_name || it.name;
+								const group = it.supplier_group || it.customer_group || it.parent_item_group;
 								return (
 									<div
 										key={it.name}

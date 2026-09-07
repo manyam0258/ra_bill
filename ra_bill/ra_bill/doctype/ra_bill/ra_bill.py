@@ -22,6 +22,7 @@ def _pct(part, whole):
 
 class RABill(Document):
 	def validate(self):
+		self.ensure_child_methods()
 		self.set_defaults_from_work_order()
 		self.set_previous_ra_bill()
 		self.set_ra_bill_no()
@@ -30,6 +31,15 @@ class RABill(Document):
 		self.calculate_item_amounts()
 		self.calculate_child_lines()
 		self.calculate_totals()
+
+	def ensure_child_methods(self):
+		for row in getattr(self, "deductions", []):
+			if not getattr(row, "method", None):
+				row.method = getattr(row, "calculation_method", None) or "Percentage"
+		for row in getattr(self, "additions", []):
+			if not getattr(row, "method", None):
+				row.method = getattr(row, "calculation_method", None) or "Percentage"
+
 
 	def on_submit(self):
 		self.update_project_balances(cancel=False)
@@ -130,7 +140,7 @@ class RABill(Document):
 					{
 						"addition_type": row.addition_type,
 						"description": row.description,
-						"method": row.method,
+						"method": getattr(row, "method", None) or getattr(row, "calculation_method", None) or "Percentage",
 						"rate": row.rate,
 						"amount": row.amount,
 						"account": row.account,
@@ -143,7 +153,7 @@ class RABill(Document):
 					{
 						"deduction_type": row.deduction_type,
 						"description": row.description,
-						"method": row.method,
+						"method": getattr(row, "method", None) or getattr(row, "calculation_method", None) or "Percentage",
 						"rate": row.rate,
 						"amount": row.amount,
 						"cap_percentage": row.cap_percentage,
@@ -284,18 +294,24 @@ class RABill(Document):
 		return flt(wo.deviation_tolerance_percentage) if wo else 0.0
 
 	def _warn_deviation(self, row, tolerance):
-		if row.is_extra_item or not tolerance or not flt(row.boq_qty):
+		if row.is_extra_item or not flt(row.boq_qty):
 			return
-		limit = flt(row.boq_qty) * (1 + tolerance / 100.0)
-		if flt(row.cumulative_qty) > limit:
-			frappe.msgprint(
-				_("Row {0} ({1}): cumulative qty {2} exceeds Work Order qty {3} by more than {4}%. "
-				  "A Variation Order may be required.").format(
-					row.idx, row.description, flt(row.cumulative_qty), flt(row.boq_qty), tolerance
-				),
-				indicator="orange",
-				title=_("Deviation Warning"),
-			)
+		tol = flt(tolerance)
+		limit = flt(row.boq_qty) * (1.0 + tol / 100.0)
+		if flt(row.cumulative_qty) > (limit + 1e-6):
+			item_name = row.item_code or row.description or _("Row #{0}").format(row.idx)
+			if tol > 0:
+				msg = _(
+					"Row #{0} ({1}): Cumulative quantity {2} exceeds the Work Order contracted quantity of {3} "
+					"(allowed limit with {4}% deviation tolerance is {5}). "
+					"A Variation Order is required to proceed beyond this limit."
+				).format(row.idx, item_name, flt(row.cumulative_qty), flt(row.boq_qty), tol, limit)
+			else:
+				msg = _(
+					"Row #{0} ({1}): Cumulative quantity {2} exceeds the Work Order contracted quantity of {3}. "
+					"A Variation Order is required to proceed beyond this limit."
+				).format(row.idx, item_name, flt(row.cumulative_qty), flt(row.boq_qty))
+			frappe.throw(msg, title=_("Quantity Exceeds Work Order Limit"))
 
 	def calculate_child_lines(self):
 		"""Compute escalation and secured-advance line amounts."""
@@ -373,39 +389,73 @@ class RABill(Document):
 				total += flt(row.amount)
 		return total
 
-	def _is_advance_recovery_type(self, dt):
+	def _is_advance_recovery_type(self, dt, desc=None):
 		if not dt:
 			return False
 		dt = dt.strip()
+		desc = (desc or "").strip()
 		return (
 			dt in ("Mobilization Recovery", "Mobilization Advance Recovery", "Ad Hoc Advance Recovery", "Ad Hoc Advance", "Advance Recovery")
 			or dt.startswith("Other -")
+			or (dt == "Other" and (desc.startswith("Other -") or "advance" in desc.lower()))
 		)
+
+	def _get_advance_name(self, row):
+		dt = (getattr(row, "deduction_type", None) or "").strip()
+		desc = (getattr(row, "description", None) or "").strip()
+		if dt in ("Mobilization Recovery", "Mobilization Advance Recovery") or desc in ("Mobilization Advance", "Mobilization Advance Recovery"):
+			return _("Mobilization Advance")
+		if dt in ("Advance Recovery", "Ad Hoc Advance Recovery", "Ad Hoc Advance") or desc in ("Ad Hoc Advance", "Ad Hoc Advance Recovery"):
+			return _("Ad Hoc Advance")
+		if desc.startswith("Other -"):
+			return desc
+		if dt.startswith("Other -"):
+			return dt
+		if desc and "advance" in desc.lower():
+			return desc
+		if dt:
+			return dt
+		return _("Advance")
 
 	def _compute_deductions(self, base):
 		"""Set each deduction row's amount and description; return per-type sums for the summary fields."""
 		sums = {"Retention": 0.0, "TDS": 0.0, "Labour Cess": 0.0, "Mobilization Recovery": 0.0}
 		for row in self.deductions:
-			if row.deduction_type in DEDUCTION_DESCRIPTION_MAP:
+			if not row.description and row.deduction_type in DEDUCTION_DESCRIPTION_MAP:
 				row.description = DEDUCTION_DESCRIPTION_MAP[row.deduction_type]
 			row.amount = self._deduction_row_amount(row, base)
 			if row.deduction_type in sums:
 				sums[row.deduction_type] += flt(row.amount)
-			elif self._is_advance_recovery_type(row.deduction_type):
+			elif self._is_advance_recovery_type(row.deduction_type, row.description):
 				sums["Mobilization Recovery"] += flt(row.amount)
 		return sums
 
 	def _deduction_row_amount(self, row, base):
 		if row.method == "Fixed Amount":
 			return flt(row.amount)
+
 		rate = flt(row.rate)
 		if row.deduction_type == "Retention":
 			return self._retention_for_row(row, base)
-		if row.deduction_type == "Mobilization Recovery" or self._is_advance_recovery_type(row.deduction_type):
+		if row.deduction_type == "Mobilization Recovery" or self._is_advance_recovery_type(row.deduction_type, row.description):
 			mob_advance = self.get_project_original_mobilization_advance(row)
 			recovery = mob_advance * rate / 100.0
 			remaining = self.get_project_advance_balance(row)
-			return min(recovery, remaining) if remaining > 0 else recovery
+			if recovery > (remaining + 0.005):
+				adv_name = self._get_advance_name(row)
+				msg = _(
+					"Row #{0} ({1}): {2} recovery rate of {3}% would recover {4}, "
+					"but only {5} of this advance remains. Please correct the rate to avoid over-recovery."
+				).format(
+					row.idx,
+					row.description or row.deduction_type,
+					adv_name,
+					rate,
+					frappe.format_value(recovery, "Currency"),
+					frappe.format_value(remaining, "Currency"),
+				)
+				frappe.throw(msg, title=_("Advance Over-Recovery"))
+			return min(recovery, remaining) if remaining > 0 else 0.0
 		return flt(base) * rate / 100.0
 
 	def _previous_secured_advance(self):
@@ -435,16 +485,32 @@ class RABill(Document):
 		)
 		return flt(rows[0].total) if rows else 0.0
 
-	def _cumulative_mobilization_recovered(self, include_self=False):
+	def _cumulative_mobilization_recovered(self, include_self=False, row=None):
 		if not self.boq:
 			return 0.0
-		where_clause = """
-			rab.docstatus = 1 AND rab.boq = %s AND (
+		params = [self.boq]
+		type_filter = """
+			(
 				ded.deduction_type IN ('Mobilization Recovery', 'Mobilization Advance Recovery', 'Ad Hoc Advance Recovery', 'Ad Hoc Advance', 'Advance Recovery')
 				OR ded.deduction_type LIKE 'Other -%%'
+				OR (ded.deduction_type = 'Other' AND (ded.description LIKE 'Other -%%' OR LOWER(ded.description) LIKE '%%advance%%'))
 			)
 		"""
-		params = [self.boq]
+		if row:
+			dt = (getattr(row, "deduction_type", None) or "").strip()
+			desc = (getattr(row, "description", None) or "").strip()
+			if dt in ("Mobilization Recovery", "Mobilization Advance Recovery") or desc in ("Mobilization Advance", "Mobilization Advance Recovery"):
+				type_filter = "(ded.deduction_type IN ('Mobilization Recovery', 'Mobilization Advance Recovery') OR ded.description IN ('Mobilization Advance', 'Mobilization Advance Recovery'))"
+			elif dt in ("Advance Recovery", "Ad Hoc Advance Recovery", "Ad Hoc Advance") or desc in ("Ad Hoc Advance", "Ad Hoc Advance Recovery"):
+				type_filter = "(ded.deduction_type IN ('Advance Recovery', 'Ad Hoc Advance Recovery', 'Ad Hoc Advance') OR ded.description IN ('Ad Hoc Advance', 'Ad Hoc Advance Recovery'))"
+			elif dt.startswith("Other -") or dt == "Other":
+				if desc:
+					type_filter = "(ded.deduction_type = %s OR ded.description = %s)"
+					params.extend([dt, desc])
+				else:
+					type_filter = "(ded.deduction_type LIKE 'Other -%%' OR ded.deduction_type = 'Other')"
+
+		where_clause = f"rab.docstatus = 1 AND rab.boq = %s AND {type_filter}"
 		if not include_self and self.name:
 			where_clause += " AND rab.name != %s"
 			params.append(self.name)
@@ -465,15 +531,19 @@ class RABill(Document):
 
 		# 1. Direct query on tabRAB Work Order Advance child table
 		dt = (getattr(row, "deduction_type", None) or "").strip()
+		desc = (getattr(row, "description", None) or "").strip()
 		adv_type = None
 		adv_desc = None
-		if dt in ("Mobilization Recovery", "Mobilization Advance Recovery"):
+		if dt in ("Mobilization Recovery", "Mobilization Advance Recovery") or desc in ("Mobilization Advance", "Mobilization Advance Recovery"):
 			adv_type = "Mobilization Advance"
-		elif dt in ("Ad Hoc Advance Recovery", "Ad Hoc Advance"):
+		elif dt in ("Advance Recovery", "Ad Hoc Advance Recovery", "Ad Hoc Advance") or desc in ("Ad Hoc Advance", "Ad Hoc Advance Recovery"):
 			adv_type = "Ad Hoc Advance"
-		elif dt.startswith("Other -"):
+		elif dt.startswith("Other -") or dt == "Other":
 			adv_type = "Other"
-			adv_desc = dt.replace("Other -", "").strip()
+			if desc.startswith("Other -"):
+				adv_desc = desc.replace("Other -", "").strip()
+			elif dt.startswith("Other -"):
+				adv_desc = dt.replace("Other -", "").strip()
 
 		if adv_type:
 			if adv_desc:
@@ -565,7 +635,7 @@ class RABill(Document):
 		if include_self is None:
 			include_self = (self.docstatus == 1)
 		mob_advance = self.get_project_original_mobilization_advance(row)
-		already_recovered = self._cumulative_mobilization_recovered(include_self=include_self)
+		already_recovered = self._cumulative_mobilization_recovered(include_self=include_self, row=row)
 		return max(0.0, mob_advance - already_recovered)
 
 	def update_project_balances(self, cancel=False):

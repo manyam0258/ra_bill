@@ -60,38 +60,7 @@ interface ReportResponse {
 	report_summary: ReportSummaryItem[];
 }
 
-function getFrappeCSRFToken(): string {
-	const fromFrappe = (window as any).frappe?.csrf_token;
-	if (fromFrappe && fromFrappe !== "Guest") return fromFrappe;
-	const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
-	if (match) return decodeURIComponent(match[1]);
-	return "";
-}
-
-async function callFrappeMethod(method: string, args: Record<string, any>) {
-	const response = await fetch(`/api/method/${method}`, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-			"X-Frappe-CSRF-Token": getFrappeCSRFToken(),
-		},
-		body: JSON.stringify(args),
-	});
-	if (!response.ok) {
-		const errText = await response.text();
-		let detail = errText;
-		try {
-			const parsed = JSON.parse(errText);
-			detail = parsed?.exception || parsed?.message || parsed?.exc || errText;
-		} catch (_) {}
-		throw new Error(`Frappe API Error: ${detail}`);
-	}
-	const json = await response.json();
-	if (json._error_message || json.exc) {
-		throw new Error(json._error_message || json.exc);
-	}
-	return json.message ?? json;
-}
+import { callFrappeMethod, parseFrappeError } from "../utils/frappeErrors";
 
 const formatCurrency = (amount: number | undefined | null, currency = "INR") => {
 	if (amount === undefined || amount === null) return "-";
@@ -223,7 +192,8 @@ export function RABWorkOrderLedgerView({
 				fetchLedger(selectedWO);
 			}
 		} catch (err: any) {
-			alert(`Failed to submit Payment Entry: ${err.message || String(err)}`);
+			const parsed = parseFrappeError(err, "Payment Entry Submit Failed");
+			alert(`Failed to submit Payment Entry: ${parsed.message}`);
 		} finally {
 			setSubmittingPE(null);
 		}
