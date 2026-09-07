@@ -23,23 +23,7 @@ const formatCurrency = (amount: number | undefined | null, currency = "INR") => 
 	}).format(Math.abs(amount));
 	return isNegative ? `- ${formatted}` : formatted;
 };
-
-async function callFrappeMethod(method: string, args: Record<string, any>) {
-	const response = await fetch(`/api/method/${method}`, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-			"X-Frappe-CSRF-Token": (window as any).frappe?.csrf_token || "",
-		},
-		body: JSON.stringify(args),
-	});
-	if (!response.ok) {
-		const errText = await response.text();
-		throw new Error(`Frappe API Error: ${errText}`);
-	}
-	const json = await response.json();
-	return json.message || json;
-}
+import { callFrappeMethod } from "../utils/frappeErrors";
 
 interface PaymentEntryDetailProps {
 	paymentId?: string;

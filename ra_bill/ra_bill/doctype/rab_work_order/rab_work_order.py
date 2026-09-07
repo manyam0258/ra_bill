@@ -36,9 +36,14 @@ class RABWorkOrder(Document):
 		self.calculate_totals()
 		if not self.contract_value:
 			self.contract_value = self.total_boq_amount
-		for row in self.deductions:
+		for row in getattr(self, "deductions", []):
+			if not getattr(row, "method", None):
+				row.method = getattr(row, "calculation_method", None) or "Percentage"
 			if row.deduction_type in DEDUCTION_DESCRIPTION_MAP:
 				row.description = DEDUCTION_DESCRIPTION_MAP[row.deduction_type]
+		for row in getattr(self, "additions", []):
+			if not getattr(row, "method", None):
+				row.method = getattr(row, "calculation_method", None) or "Percentage"
 
 	def before_insert(self):
 		self.seed_default_charges()

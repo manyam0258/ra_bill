@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useFrappeGetDoc, useFrappeGetDocList, useFrappeUpdateDoc } from "frappe-react-sdk";
+import * as XLSX from "xlsx";
 import { RowEditorModal } from "./RowEditorModal";
 import { ItemLinkDropdown } from "./ItemLinkDropdown";
+import { DeskMessageModal } from "./DeskMessageModal";
+import { parseFrappeError, callFrappeMethod } from "../utils/frappeErrors";
 import {
 	ArrowLeft,
 	Printer,
@@ -26,60 +29,37 @@ const formatCurrency = (amount: number | undefined | null, currency = "INR") => 
 	return isNegative ? `- ${formatted}` : formatted;
 };
 
-function getFrappeCSRFToken(): string {
-	// 1. Frappe's own JS object (available when loaded inside Frappe desk/portal)
-	const fromFrappe = (window as any).frappe?.csrf_token;
-	if (fromFrappe && fromFrappe !== "Guest") return fromFrappe;
-	// 2. Cookie fallback (frappe sets sid cookie; csrf_token is stored as cookie in some setups)
-	const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
-	if (match) return decodeURIComponent(match[1]);
-	return "";
-}
-
-async function callFrappeMethod(method: string, args: Record<string, any>) {
-	const response = await fetch(`/api/method/${method}`, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-			"X-Frappe-CSRF-Token": getFrappeCSRFToken(),
-		},
-		body: JSON.stringify(args),
-	});
-	if (!response.ok) {
-		const errText = await response.text();
-		// Try to extract the Frappe-formatted exception from the JSON body
-		let detail = errText;
-		try {
-			const parsed = JSON.parse(errText);
-			detail = parsed?.exception || parsed?.message || parsed?.exc || errText;
-		} catch (_) { /* keep raw text */ }
-		throw new Error(`Frappe API Error: ${detail}`);
-	}
-	const json = await response.json();
-	if (json._error_message || json.exc) {
-		throw new Error(json._error_message || json.exc);
-	}
-	return json.message ?? json;
-}
-
-export const getAdvanceRecoveryLabel = (adv: any) => {
-	if (adv.advance_type === "Mobilization Advance") return "Mobilization Advance Recovery";
-	if (adv.advance_type === "Ad Hoc Advance") return "Ad Hoc Advance Recovery";
-	return `Other - ${adv.description || "Advance"}`;
+export const getAdvanceRecoveryDeductionType = (advanceType: string) => {
+	if (advanceType === "Mobilization Advance") return "Mobilization Recovery";
+	if (advanceType === "Ad Hoc Advance") return "Advance Recovery";
+	return "Other";
 };
 
-export const isAdvanceRecoveryType = (deductionType: string) => {
+export const getAdvanceRecoveryDescription = (adv: any) => {
+	if (adv.advance_type === "Mobilization Advance") return "Mobilization Advance";
+	if (adv.advance_type === "Ad Hoc Advance") return "Ad Hoc Advance";
+	return adv.description ? `Other - ${adv.description}` : "Other Advance";
+};
+
+export const isAdvanceRecoveryType = (deductionType: string, description?: string) => {
 	if (!deductionType) return false;
 	const dt = deductionType.trim();
-	return (
+	const desc = (description || "").trim();
+	if (
 		dt === "Mobilization Recovery" ||
 		dt === "Mobilization Advance Recovery" ||
 		dt === "Mobilization Advance" ||
+		dt === "Advance Recovery" ||
 		dt === "Ad Hoc Advance Recovery" ||
 		dt === "Ad Hoc Advance" ||
-		dt === "Advance Recovery" ||
 		dt.startsWith("Other -")
-	);
+	) {
+		return true;
+	}
+	if (dt === "Other" && (desc.startsWith("Other -") || desc.toLowerCase().includes("advance"))) {
+		return true;
+	}
+	return false;
 };
 
 interface RABillDetailProps {
@@ -93,6 +73,11 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 	const { data: bill, isLoading, mutate } = useFrappeGetDoc("RA Bill", billId);
 	const { updateDoc, loading: isSaving } = useFrappeUpdateDoc();
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [feedbackModal, setFeedbackModal] = useState<{
+		title: string;
+		message: string;
+		indicator?: "red" | "orange" | "blue" | "green" | string;
+	} | null>(null);
 
 	// Fetch parent Work Order once bill is available
 	const woName = bill?.boq || bill?.work_order || "";
@@ -145,6 +130,8 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 	const [isAdditionsOpen, setIsAdditionsOpen] = useState(true);
 	const [isDeductionsOpen, setIsDeductionsOpen] = useState(true);
 
+	const lastLoadedDocRef = useRef<{ name: string; modified: string } | null>(null);
+
 	const fetchWorkflowDetails = async () => {
 		try {
 			const wf = await callFrappeMethod("ra_bill.api.get_workflow_details", { doctype: "RA Bill", name: billId });
@@ -156,40 +143,46 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 
 	useEffect(() => {
 		if (bill) {
-			fetchWorkflowDetails();
-			setPostingDate(bill.posting_date || new Date().toISOString().split("T")[0]);
-			setRaBillNo(bill.ra_bill_no || 1);
-			setIsFinalBill(!!bill.is_final_bill);
-			setBillingMethod(bill.billing_method || "Item Rate (Measured)");
-			setApplyGst(bill.apply_gst !== 0);
-			setGstPercentage(bill.gst_percentage || 18);
+			const isDocChanged =
+				!lastLoadedDocRef.current ||
+				lastLoadedDocRef.current.name !== bill.name ||
+				lastLoadedDocRef.current.modified !== bill.modified;
 
-			// Map from server field names to local state.
-			// DocType field: cumulative_qty (editable, total qty to date)
-			// DocType field: current_qty   (read-only, computed: cumulative - previous)
-			// DocType field: previous_qty  (read-only, from previous RA Bill)
-			const mappedItems = (bill.items || []).map((it: any) => {
-				const rate = Number(it.rate || 0);
-				const prevQty = Number(it.previous_qty || 0);
-				// cumulative_qty is the user-editable field Frappe actually saves
-				const cumulativeQty = Number(it.cumulative_qty || 0);
-				// current_qty is computed by server: cumulative - previous
-				const currentQty = Number(it.current_qty ?? (cumulativeQty - prevQty));
-				return {
-					...it,
-					item_code: it.item_code || "",
-					description: it.description || "",
-					uom: it.uom || "Nos",
-					rate,
-					boq_qty: Number(it.boq_qty || 0),
-					previous_qty: prevQty,
-					cumulative_qty: cumulativeQty,
-					current_qty: currentQty,
-				};
-			});
-			setItems(mappedItems);
+			if (isDocChanged) {
+				lastLoadedDocRef.current = { name: bill.name, modified: bill.modified };
+				fetchWorkflowDetails();
+				setPostingDate(bill.posting_date || new Date().toISOString().split("T")[0]);
+				setRaBillNo(bill.ra_bill_no || 1);
+				setIsFinalBill(!!bill.is_final_bill);
+				setBillingMethod(bill.billing_method || "Item Rate (Measured)");
+				setApplyGst(bill.apply_gst !== 0);
+				setGstPercentage(bill.gst_percentage || 18);
 
-			setAdditions(bill.additions || []);
+				// Map from server field names to local state.
+				// Previous Qty: read-only from server
+				// This Bill Qty: the only field the user edits
+				// Cumulative Qty: previous_qty + this_bill_qty
+				const mappedItems = (bill.items || []).map((it: any) => {
+					const rate = Number(it.rate || 0);
+					const prevQty = Number(it.previous_qty || 0);
+					const cumulativeQty = Number(it.cumulative_qty || 0);
+					const thisBillQty = Number(it.current_qty ?? (cumulativeQty - prevQty));
+					return {
+						...it,
+						item_code: it.item_code || "",
+						description: it.description || "",
+						uom: it.uom || "Nos",
+						rate,
+						boq_qty: Number(it.boq_qty || 0),
+						previous_qty: prevQty,
+						this_bill_qty: thisBillQty,
+						cumulative_qty: prevQty + thisBillQty,
+						current_qty: thisBillQty,
+					};
+				});
+				setItems(mappedItems);
+				setAdditions(bill.additions || []);
+			}
 
 			let initialDeductions = [...(bill.deductions || [])];
 			const woAdvances: any[] = (workOrder?.advances && workOrder.advances.length > 0)
@@ -200,45 +193,58 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 					amount: Number(workOrder.mobilization_advance_amount),
 				}] : []);
 
-			if (woAdvances.length > 0) {
-				const nonAdvDeductions = initialDeductions.filter((d: any) => !isAdvanceRecoveryType(d.deduction_type));
-				const advDeductions = initialDeductions.filter((d: any) => isAdvanceRecoveryType(d.deduction_type));
+			if (isDocChanged || (deductions.length === 0 && woAdvances.length > 0)) {
+				if (woAdvances.length > 0) {
+					const nonAdvDeductions = initialDeductions.filter((d: any) => !isAdvanceRecoveryType(d.deduction_type, d.description));
+					const advDeductions = initialDeductions.filter((d: any) => isAdvanceRecoveryType(d.deduction_type, d.description));
 
-				const mappedAdvDeductions = woAdvances.map((adv: any) => {
-					const label = getAdvanceRecoveryLabel(adv);
-					const existing = advDeductions.find((d: any) =>
-						d.deduction_type === label ||
-						(adv.advance_type === "Mobilization Advance" && (d.deduction_type === "Mobilization Recovery" || d.deduction_type === "Mobilization Advance"))
-					);
-					if (existing) {
+					const mappedAdvDeductions = woAdvances.map((adv: any) => {
+						const dt = getAdvanceRecoveryDeductionType(adv.advance_type);
+						const desc = getAdvanceRecoveryDescription(adv);
+						const existing = advDeductions.find((d: any) => {
+							if (adv.advance_type === "Mobilization Advance") {
+								return d.deduction_type === "Mobilization Recovery" || d.deduction_type === "Mobilization Advance Recovery" || d.description === desc;
+							}
+							if (adv.advance_type === "Ad Hoc Advance") {
+								return d.deduction_type === "Advance Recovery" || d.deduction_type === "Ad Hoc Advance Recovery" || d.description === desc;
+							}
+							return d.description === desc || (d.deduction_type === "Other" && d.description?.includes(adv.description || ""));
+						});
+						if (existing) {
+							return {
+								...existing,
+								deduction_type: dt,
+								description: existing.description || desc,
+								advance_amount: Number(adv.amount || 0),
+							};
+						}
 						return {
-							...existing,
-							deduction_type: label,
-							description: existing.description || label,
+							deduction_type: dt,
+							description: desc,
+							method: "Percentage",
+							calculation_method: "Percentage",
+							rate: 20,
+							amount: 0,
 							advance_amount: Number(adv.amount || 0),
 						};
-					}
-					return {
-						deduction_type: label,
-						description: label,
-						calculation_method: "Percentage",
-						rate: 20,
-						amount: 0,
-						advance_amount: Number(adv.amount || 0),
-					};
-				});
+					});
 
-				setDeductions([...nonAdvDeductions, ...mappedAdvDeductions]);
-			} else {
-				setDeductions(initialDeductions);
+					setDeductions([...nonAdvDeductions, ...mappedAdvDeductions]);
+				} else if (isDocChanged) {
+					setDeductions(initialDeductions);
+				}
 			}
 		}
 	}, [bill, workOrder]);
 
 	// Dynamic Live Financial Recalculations
 	const grossWorkValue = useMemo(() => {
-		// current_qty is "this bill qty" (computed: cumulative - previous); rate gives this bill amount
-		return items.reduce((acc, it) => acc + (Number(it.current_qty || 0) * Number(it.rate || 0)), 0);
+		// this_bill_qty is "this bill qty"; rate gives this bill amount
+		return items.reduce((acc, it) => {
+			const prevQty = Number(it.previous_qty || 0);
+			const thisBillQty = Number(it.this_bill_qty ?? (Number(it.cumulative_qty || 0) - prevQty));
+			return acc + (thisBillQty * Number(it.rate || 0));
+		}, 0);
 	}, [items]);
 
 	const otherAdditionsTotal = useMemo(() => {
@@ -290,7 +296,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 	const updatedDeductions = useMemo(() => {
 		return deductions.map((d: any) => {
 			let amt = Number(d.amount || 0);
-			const isAdvRecovery = isAdvanceRecoveryType(d.deduction_type);
+			const isAdvRecovery = isAdvanceRecoveryType(d.deduction_type, d.description);
 			const isPercentage =
 				d.calculation_method === "Percentage" ||
 				d.method === "Percentage" ||
@@ -301,7 +307,11 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 				if (isAdvRecovery) {
 					let rowAdvAmt = Number(d.advance_amount || 0);
 					if (!rowAdvAmt && workOrder?.advances) {
-						const match = workOrder.advances.find((a: any) => getAdvanceRecoveryLabel(a) === d.deduction_type);
+						const match = workOrder.advances.find((a: any) => {
+							const dt = getAdvanceRecoveryDeductionType(a.advance_type);
+							const desc = getAdvanceRecoveryDescription(a);
+							return (d.deduction_type === dt && (!d.description || d.description === desc)) || d.description === desc;
+						});
 						if (match) rowAdvAmt = Number(match.amount || 0);
 					}
 					if (!rowAdvAmt) {
@@ -319,7 +329,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 
 	// Single source of truth for this bill's advance recovery deduction (sum of all advance recovery rows)
 	const currentBillAdvanceRecovery = useMemo(() => {
-		const advRows = updatedDeductions.filter((d: any) => isAdvanceRecoveryType(d.deduction_type));
+		const advRows = updatedDeductions.filter((d: any) => isAdvanceRecoveryType(d.deduction_type, d.description));
 		if (advRows.length > 0) {
 			return advRows.reduce((sum, d) => sum + Number(d.amount || 0), 0);
 		}
@@ -364,11 +374,15 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 
 	// ── CSV Download / Upload handlers for Measured Items ─────────────────────
 	const handleDownloadItemsCSV = () => {
-		const headers = "Item Code,Description,UOM,Rate,BOQ Qty,Previous Qty,Cumulative Qty,This Bill Qty,This Bill Amount\n";
+		const headers = "Item Code,Description,UOM,Rate,BOQ Qty,Previous Qty,This Bill Qty,Cumulative Qty,This Bill Amount\n";
 		const rows = items.length > 0
-			? items.map((it: any) =>
-				`"${it.item_code || ""}","${it.description || ""}","${it.uom || "Nos"}",${it.rate || 0},${it.boq_qty || 0},${it.previous_qty || 0},${it.cumulative_qty || 0},${it.current_qty || 0},${(Number(it.current_qty || 0) * Number(it.rate || 0)).toFixed(2)}`
-			).join("\n")
+			? items.map((it: any) => {
+				const prevQty = Number(it.previous_qty || 0);
+				const thisBillQty = Number(it.this_bill_qty ?? (Number(it.cumulative_qty || 0) - prevQty));
+				const cumulativeQty = prevQty + thisBillQty;
+				const rate = Number(it.rate || 0);
+				return `"${it.item_code || ""}","${it.description || ""}","${it.uom || "Nos"}",${rate},${it.boq_qty || 0},${prevQty},${thisBillQty},${cumulativeQty},${(thisBillQty * rate).toFixed(2)}`;
+			}).join("\n")
 			: '"","","Nos",0,0,0,0,0,0';
 		const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8;" });
 		const url = URL.createObjectURL(blob);
@@ -384,61 +398,134 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 	const handleUploadItemsCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
-		const reader = new FileReader();
-		reader.onload = (evt) => {
-			const text = evt.target?.result as string;
-			if (!text) return;
-			const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
-			if (lines.length < 2) {
-				alert("CSV must have a header row and at least one data row.");
-				return;
-			}
-			// Map header names to column indices
-			const headerRow = lines[0].split(",").map((h) => h.replace(/^"|"$/g, "").trim().toLowerCase());
-			const requiredCols = ["item code", "description", "uom", "cumulative qty"];
-			const missing = requiredCols.filter((col) => !headerRow.includes(col));
-			if (missing.length > 0) {
-				alert(`CSV is missing required columns: ${missing.join(", ")}\n\nExpected headers:\n${headerRow.join(", ")}`);
-				return;
-			}
-			const col = (name: string) => headerRow.indexOf(name);
-			const parsedItems: any[] = [];
-			for (let i = 1; i < lines.length; i++) {
-				const cols = lines[i].split(",").map((c) => c.replace(/^"|"$/g, "").trim());
-				const item_code = cols[col("item code")] || "";
-				const description = cols[col("description")] || item_code;
-				const uom = cols[col("uom")] || "Nos";
-				const rate = Number(cols[col("rate")] || 0);
-				const boq_qty = Number(cols[col("boq qty")] || 0);
-				const previous_qty = Number(cols[col("previous qty")] || 0);
-				const cumulative_qty = Number(cols[col("cumulative qty")] || 0);
-				const current_qty = cumulative_qty - previous_qty;
-				if (item_code || description) {
-					parsedItems.push({ item_code, description, uom, rate, boq_qty, previous_qty, cumulative_qty, current_qty });
+
+		const isExcel = file.name.toLowerCase().endsWith(".xlsx") || file.name.toLowerCase().endsWith(".xls");
+
+		const mapRowObj = (rowObj: Record<string, any>) => {
+			const keys = Object.keys(rowObj);
+			const findVal = (matchers: string[]) => {
+				for (const key of keys) {
+					const norm = key.toLowerCase().replace(/[^a-z0-9]/g, "");
+					if (matchers.some((m) => norm === m || norm.includes(m))) {
+						return rowObj[key];
+					}
 				}
-			}
-			if (parsedItems.length > 0) {
-				setItems(parsedItems);
+				return undefined;
+			};
+
+			const item_code = String(findVal(["itemcode", "code", "item"]) ?? "").trim();
+			const description = String(findVal(["description", "desc", "itemdescription", "itemname"]) ?? "").trim() || item_code;
+			const uom = String(findVal(["uom", "unit"]) ?? "").trim() || "Nos";
+			const rate = Number(findVal(["unitrate", "rate", "price"]) ?? 0);
+			const boq_qty = Number(findVal(["boqqty", "workorderqty", "quantity", "qty"]) ?? 0);
+			const prev_val = findVal(["previousqty", "prevqty"]);
+			const this_bill_val = findVal(["thisbillqty", "billqty", "currentqty"]);
+			const cum_val = findVal(["cumulativeqty", "cumqty", "totalqty"]);
+
+			const previous_qty = Number(prev_val ?? 0);
+			let this_bill_qty = 0;
+			let cumulative_qty = 0;
+
+			if (this_bill_val !== undefined) {
+				this_bill_qty = Number(this_bill_val);
+				cumulative_qty = cum_val !== undefined ? Number(cum_val) : (previous_qty + this_bill_qty);
+			} else if (cum_val !== undefined) {
+				cumulative_qty = Number(cum_val);
+				this_bill_qty = cumulative_qty - previous_qty;
 			} else {
-				alert("No valid rows found in the uploaded CSV.");
+				cumulative_qty = previous_qty;
+				this_bill_qty = 0;
 			}
+			const current_qty = this_bill_qty;
+
+			if (item_code || description) {
+				return { item_code, description, uom, rate, boq_qty, previous_qty, cumulative_qty, current_qty, this_bill_qty };
+			}
+			return null;
 		};
-		reader.readAsText(file);
+
+		if (isExcel) {
+			const reader = new FileReader();
+			reader.onload = (evt) => {
+				try {
+					const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+					const wb = XLSX.read(data, { type: "array" });
+					const wsName = wb.SheetNames[0];
+					const ws = wb.Sheets[wsName];
+					const jsonRows = XLSX.utils.sheet_to_json<Record<string, any>>(ws, { defval: "" });
+					const parsedItems = jsonRows.map(mapRowObj).filter(Boolean);
+
+					if (parsedItems.length > 0) {
+						setItems(parsedItems);
+					} else {
+						alert("No valid item rows found in the uploaded Excel file.");
+					}
+				} catch (err: any) {
+					console.error("Error parsing Excel items:", err);
+					alert("Failed to parse Excel file: " + (err.message || String(err)));
+				}
+			};
+			reader.readAsArrayBuffer(file);
+		} else {
+			const reader = new FileReader();
+			reader.onload = (evt) => {
+				const text = evt.target?.result as string;
+				if (!text) return;
+				const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+				if (lines.length < 2) {
+					alert("CSV must have a header row and at least one data row.");
+					return;
+				}
+				const headerRow = lines[0].split(",").map((h) => h.replace(/^"|"$/g, "").trim());
+				const parsedItems: any[] = [];
+				for (let i = 1; i < lines.length; i++) {
+					const cols = lines[i].split(",").map((c) => c.replace(/^"|"$/g, "").trim());
+					const rowObj: Record<string, any> = {};
+					headerRow.forEach((h, idx) => {
+						rowObj[h] = cols[idx];
+					});
+					const mapped = mapRowObj(rowObj);
+					if (mapped) {
+						parsedItems.push(mapped);
+					}
+				}
+				if (parsedItems.length > 0) {
+					setItems(parsedItems);
+				} else {
+					alert("No valid rows found in the uploaded CSV.");
+				}
+			};
+			reader.readAsText(file);
+		}
 		e.target.value = "";
 	};
 
 
 	const handleItemChange = (index: number, field: string, value: any) => {
 		const updated = [...items];
-		(updated[index] as any)[field] = value;
+		const row = { ...updated[index], [field]: value };
 
-		// When cumulative_qty or rate changes, recompute the derived "current_qty" display
-		if (field === "cumulative_qty" || field === "rate") {
-			const prevQty = Number(updated[index].previous_qty || 0);
-			const cumulativeQty = Number(updated[index].cumulative_qty || 0);
-			updated[index].current_qty = cumulativeQty - prevQty;
+		// This Bill Qty is the only field user directly edits.
+		// Immediately and correctly recalculate cumulative_qty = previous_qty + this_bill_qty
+		if (field === "this_bill_qty" || field === "rate") {
+			const prevQty = Number(row.previous_qty || 0);
+			const thisBillQty = Number(row.this_bill_qty || 0);
+			const rate = Number(row.rate || 0);
+			row.cumulative_qty = prevQty + thisBillQty;
+			row.current_qty = thisBillQty;
+			row.this_bill_amount = thisBillQty * rate;
+			row.current_amount = thisBillQty * rate;
+		} else if (field === "cumulative_qty") {
+			const prevQty = Number(row.previous_qty || 0);
+			const cumulativeQty = Number(row.cumulative_qty || 0);
+			const rate = Number(row.rate || 0);
+			row.this_bill_qty = cumulativeQty - prevQty;
+			row.current_qty = cumulativeQty - prevQty;
+			row.this_bill_amount = row.current_qty * rate;
+			row.current_amount = row.this_bill_amount;
 		}
 
+		updated[index] = row;
 		setItems(updated);
 	};
 
@@ -452,6 +539,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 				rate: 0,
 				boq_qty: 0,
 				previous_qty: 0,
+				this_bill_qty: 0,
 				cumulative_qty: 0,
 				current_qty: 0,
 			},
@@ -468,7 +556,17 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 		setEditingRowIndex(index + 1);
 	};
 
-	const emptyItemRow = () => ({ item_code: "", description: "", uom: "Nos", rate: 0, boq_qty: 0, previous_qty: 0, cumulative_qty: 0, current_qty: 0 });
+	const emptyItemRow = () => ({
+		item_code: "",
+		description: "",
+		uom: "Nos",
+		rate: 0,
+		boq_qty: 0,
+		previous_qty: 0,
+		this_bill_qty: 0,
+		cumulative_qty: 0,
+		current_qty: 0,
+	});
 
 	const handleInsertAbove = (index: number) => {
 		const updated = [...items];
@@ -505,35 +603,91 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 			total_deductions: totalDeductions,
 			mobilization_recovery_amount: currentBillAdvanceRecovery,
 			net_payable: netPayable,
-			items: items.map((it) => ({
-				// Preserve the server-side child row name so Frappe updates (not re-inserts) each row
-				...(it.name ? { name: it.name } : {}),
-				...(it.boq_item ? { boq_item: it.boq_item } : {}),
-				item_code: it.item_code,
-				description: it.description,
-				uom: it.uom,
-				rate: Number(it.rate),
-				boq_qty: Number(it.boq_qty || 0),
-				// cumulative_qty is the actual DB column the user edits (total qty to date)
-				// previous_qty is read-only (set by server from previous RA Bill)
-				// current_qty is computed by server as (cumulative - previous) — do NOT send it
-				previous_qty: Number(it.previous_qty || 0),
-				cumulative_qty: Number(it.cumulative_qty || 0),
+			items: items.map((it) => {
+				const prevQty = Number(it.previous_qty || 0);
+				const thisBillQty = Number(it.this_bill_qty ?? (Number(it.cumulative_qty || 0) - prevQty));
+				const cumulativeQty = prevQty + thisBillQty;
+				return {
+					// Preserve the server-side child row name so Frappe updates (not re-inserts) each row
+					...(it.name ? { name: it.name } : {}),
+					...(it.boq_item ? { boq_item: it.boq_item } : {}),
+					item_code: it.item_code,
+					description: it.description,
+					uom: it.uom,
+					rate: Number(it.rate),
+					boq_qty: Number(it.boq_qty || 0),
+					// previous_qty is read-only (set by server from previous RA Bill)
+					previous_qty: prevQty,
+					// cumulative_qty is accurately calculated: previous_qty + this_bill_qty
+					cumulative_qty: cumulativeQty,
+				};
+			}),
+			additions: (additions || []).map((a: any) => ({
+				...(a.name ? { name: a.name } : {}),
+				addition_type: a.addition_type || "Other",
+				description: a.description || "",
+				method: a.method || a.calculation_method || "Percentage",
+				calculation_method: a.calculation_method || a.method || "Percentage",
+				rate: Number(a.rate || 0),
+				amount: Number(a.amount || 0),
+				...(a.account ? { account: a.account } : {}),
 			})),
-			additions,
-			deductions: updatedDeductions,
+			deductions: updatedDeductions.map((d: any) => {
+				let dt = d.deduction_type;
+				let desc = d.description || d.deduction_type;
+				if (dt === "Mobilization Advance Recovery" || dt === "Mobilization Advance") {
+					dt = "Mobilization Recovery";
+					desc = desc || "Mobilization Advance";
+				} else if (dt === "Ad Hoc Advance Recovery" || dt === "Ad Hoc Advance") {
+					dt = "Advance Recovery";
+					desc = desc || "Ad Hoc Advance";
+				} else if (typeof dt === "string" && dt.startsWith("Other -")) {
+					dt = "Other";
+					desc = desc || dt;
+				}
+				const methodVal = d.method || d.calculation_method || "Percentage";
+				return {
+					...(d.name ? { name: d.name } : {}),
+					deduction_type: dt,
+					description: desc,
+					method: methodVal,
+					calculation_method: methodVal,
+					rate: Number(d.rate || 0),
+					amount: Number(d.amount || 0),
+					...(d.account ? { account: d.account } : {}),
+					...(d.payment_entry ? { payment_entry: d.payment_entry } : {}),
+					...(d.cap_percentage !== undefined ? { cap_percentage: Number(d.cap_percentage) } : {}),
+				};
+			}),
 		};
 
-		// Re-throw on failure so callers (handleSubmitBill) can abort
-		await updateDoc("RA Bill", billId, payload);
-		mutate();
+		// Re-throw on failure so callers (handleSubmitBill, handleApplyWorkflowAction) can abort
+		try {
+			await updateDoc("RA Bill", billId, payload);
+			mutate();
+		} catch (err: any) {
+			const parsed = parseFrappeError(err, "Save Failed");
+			const cleanErr: any = new Error(parsed.message);
+			if (err && typeof err === "object") {
+				Object.assign(cleanErr, err);
+			}
+			cleanErr.parsedTitle = parsed.title;
+			cleanErr.parsedIndicator = parsed.indicator;
+			throw cleanErr;
+		}
 	};
 
 	const handleSaveDraftAndAlert = async () => {
 		try {
 			await handleSaveDraft();
 		} catch (err: any) {
-			alert("Failed to save RA Bill draft: " + (err.message || err));
+			console.error("Save RA Bill draft error:", err);
+			const parsed = parseFrappeError(err, "Save Draft Failed");
+			setFeedbackModal({
+				title: parsed.title || "Save Draft Failed",
+				message: parsed.message,
+				indicator: parsed.indicator,
+			});
 		}
 	};
 
@@ -547,19 +701,13 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 			await callFrappeMethod("ra_bill.api.submit_document", { doctype: "RA Bill", name: billId });
 			mutate();
 		} catch (err: any) {
-			// Surface the real server-side error (could be ValidationError, MandatoryError, etc.)
-			const rawMsg: string = err?.message || String(err);
-			// Extract the Frappe server exception message from the JSON body when present
-			let userMsg = rawMsg;
-			try {
-				const bodyStart = rawMsg.indexOf("{");
-				if (bodyStart !== -1) {
-					const parsed = JSON.parse(rawMsg.slice(bodyStart));
-					userMsg = parsed?.exception || parsed?.message || rawMsg;
-				}
-			} catch (_) { /* keep rawMsg */ }
-			console.error("RA Bill submit error:", rawMsg);
-			alert("Submit failed:\n\n" + userMsg);
+			console.error("RA Bill submit error:", err);
+			const parsed = parseFrappeError(err, "Submit Failed");
+			setFeedbackModal({
+				title: parsed.title || "Submit Failed",
+				message: parsed.message,
+				indicator: parsed.indicator,
+			});
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -580,16 +728,13 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 			mutate();
 			fetchWorkflowDetails();
 		} catch (err: any) {
-			const rawMsg: string = err?.message || String(err);
-			let userMsg = rawMsg;
-			try {
-				const bodyStart = rawMsg.indexOf("{");
-				if (bodyStart !== -1) {
-					const parsed = JSON.parse(rawMsg.slice(bodyStart));
-					userMsg = parsed?.exception || parsed?.message || rawMsg;
-				}
-			} catch (_) {}
-			alert(`Workflow Action "${action}" failed:\n\n` + userMsg);
+			console.error(`Workflow Action "${action}" error:`, err);
+			const parsed = parseFrappeError(err, `Workflow Action "${action}" Failed`);
+			setFeedbackModal({
+				title: parsed.title || `Workflow Action "${action}" Failed`,
+				message: parsed.message,
+				indicator: parsed.indicator,
+			});
 		} finally {
 			setIsApplyingWorkflow(false);
 		}
@@ -624,16 +769,13 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 			}
 			mutate();
 		} catch (err: any) {
-			const rawMsg: string = err?.message || String(err);
-			let userMsg = rawMsg;
-			try {
-				const bodyStart = rawMsg.indexOf("{");
-				if (bodyStart !== -1) {
-					const parsed = JSON.parse(rawMsg.slice(bodyStart));
-					userMsg = parsed?.exception || parsed?.message || rawMsg;
-				}
-			} catch (_) {}
-			alert("Failed to create RAB Invoice:\n\n" + userMsg);
+			console.error("Create RAB Invoice error:", err);
+			const parsed = parseFrappeError(err, "Create RAB Invoice Failed");
+			setFeedbackModal({
+				title: parsed.title || "Create RAB Invoice Failed",
+				message: parsed.message,
+				indicator: parsed.indicator,
+			});
 		} finally {
 			setIsCreatingInvoice(false);
 		}
@@ -900,7 +1042,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 								</button>
 								<input
 									type="file"
-									accept=".csv"
+									accept=".csv,.xlsx,.xls"
 									ref={itemsFileInputRef}
 									onChange={handleUploadItemsCSV}
 									className="hidden"
@@ -926,8 +1068,8 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 								<th className="p-3.5 text-right">Work Order Qty</th>
 								<th className="p-3.5 text-right">Rate (INR)</th>
 								<th className="p-3.5 text-right">Previous Qty</th>
-								<th className="p-3.5 text-right">Cumulative Qty (enter here) *</th>
-								<th className="p-3.5 text-right">This Bill Qty (auto)</th>
+								<th className="p-3.5 text-right">This Bill Qty *</th>
+								<th className="p-3.5 text-right">Cumulative Qty</th>
 								<th className="p-3.5 text-right">This Bill Amount</th>
 								<th className="p-3.5 text-center">Row Editor</th>
 							</tr>
@@ -970,29 +1112,32 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 												</td>
 												<td className="p-3.5 text-right text-slate-400 font-mono">{it.previous_qty || 0}</td>
 												
-												{/* Cumulative Qty — the user-editable field that Frappe actually saves */}
+												{/* This Bill Qty — the ONLY user-editable field */}
 												<td className="p-3.5 text-right">
 													{isDraft ? (
 														<input
 															type="number"
 															step="any"
-															value={it.cumulative_qty === 0 ? "" : (it.cumulative_qty ?? "")}
-															onChange={(e) => handleItemChange(idx, "cumulative_qty", e.target.value === "" ? 0 : Number(e.target.value))}
+															value={it.this_bill_qty === 0 ? "" : (it.this_bill_qty ?? "")}
+															onChange={(e) => handleItemChange(idx, "this_bill_qty", e.target.value === "" ? 0 : Number(e.target.value))}
 															className="w-28 p-1.5 bg-white dark:bg-[#1e1e2d] border-2 border-indigo-500/60 dark:border-[#7367f0] rounded-lg font-mono font-bold text-right text-indigo-600 dark:text-[#7367f0] focus:outline-none"
+															placeholder="0"
 														/>
 													) : (
-														<span className="font-mono font-bold">{it.cumulative_qty || 0}</span>
+														<span className="font-mono font-bold text-indigo-600 dark:text-[#7367f0]">
+															{it.this_bill_qty ?? (Number(it.cumulative_qty || 0) - Number(it.previous_qty || 0))}
+														</span>
 													)}
 												</td>
 
-												{/* Cumulative qty read-only display column */}
-												<td className="p-3.5 text-right font-mono font-semibold text-slate-700 dark:text-slate-300">
-													{it.current_qty ?? (Number(it.cumulative_qty || 0) - Number(it.previous_qty || 0))}
+												{/* Cumulative Qty — auto-calculated and strictly READ-ONLY */}
+												<td className="p-3.5 text-right font-mono font-bold text-slate-700 dark:text-slate-300">
+													{Number(it.previous_qty || 0) + Number(it.this_bill_qty ?? (Number(it.cumulative_qty || 0) - Number(it.previous_qty || 0)))}
 												</td>
 
-												{/* This Bill Amount = current_qty (server-computed) × rate */}
+												{/* This Bill Amount = this_bill_qty × rate */}
 												<td className="p-3.5 text-right font-mono font-bold text-indigo-600 dark:text-[#7367f0]">
-													{formatCurrency(Number(it.current_qty || 0) * Number(it.rate || 0))}
+													{formatCurrency(Number(it.this_bill_qty ?? (Number(it.cumulative_qty || 0) - Number(it.previous_qty || 0))) * Number(it.rate || 0))}
 												</td>
 
 												<td className="p-3.5 text-center">
@@ -1119,7 +1264,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 							onClick={() =>
 								setDeductions([
 									...deductions,
-									{ deduction_type: "Other Recovery", description: "", calculation_method: "Percentage", rate: 0, amount: 0 },
+									{ deduction_type: "Other", description: "Other Recovery", method: "Percentage", calculation_method: "Percentage", rate: 0, amount: 0 },
 								])
 							}
 							className="px-3.5 py-1.5 bg-slate-100 dark:bg-[#1e1e2d] hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition flex items-center gap-1"
@@ -1148,7 +1293,12 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 										updatedDeductions.map((d: any, idx: number) => (
 											<tr key={idx} className="hover:bg-slate-50/80 dark:hover:bg-[#1e1e2d]/70 transition">
 												<td className="p-3 text-slate-400 font-semibold">{idx + 1}</td>
-												<td className="p-3 font-bold text-slate-900 dark:text-slate-100">{d.deduction_type}</td>
+												<td className="p-3 font-bold text-slate-900 dark:text-slate-100">
+													<div>{d.description || d.deduction_type}</div>
+													{d.description && d.description !== d.deduction_type && (
+														<span className="text-[10px] text-slate-400 font-normal block">{d.deduction_type}</span>
+													)}
+												</td>
 												<td className="p-3 text-slate-500">{d.calculation_method || d.method || "Percentage"}</td>
 												<td className="p-3 text-right font-mono">
 													{isDraft ? (
@@ -1296,6 +1446,15 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 						</table>
 					</div>
 				</div>
+			)}
+
+			{feedbackModal && (
+				<DeskMessageModal
+					title={feedbackModal.title}
+					message={feedbackModal.message}
+					indicator={feedbackModal.indicator}
+					onClose={() => setFeedbackModal(null)}
+				/>
 			)}
 		</div>
 	);
