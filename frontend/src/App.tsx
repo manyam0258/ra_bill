@@ -794,6 +794,31 @@ function RABWorkOrderDetail({
 	const [isSubmittingPE, setIsSubmittingPE] = useState(false);
 	const [peError, setPeError] = useState("");
 
+	// ── Deviation Tolerance edit state ──────────────────────────────────────
+	const [isEditingTolerance, setIsEditingTolerance] = useState(false);
+	const [editToleranceVal, setEditToleranceVal] = useState<number | "">("");
+	const [isSavingTolerance, setIsSavingTolerance] = useState(false);
+
+	const handleSaveTolerance = async () => {
+		const val = editToleranceVal === "" ? 0 : Number(editToleranceVal);
+		setIsSavingTolerance(true);
+		try {
+			await callFrappeMethod("frappe.client.set_value", {
+				doctype: "RAB Work Order",
+				name: wo.name,
+				fieldname: "deviation_tolerance_percentage",
+				value: val,
+			});
+			setIsEditingTolerance(false);
+			mutateWO();
+		} catch (err: any) {
+			const parsed = parseFrappeError(err, "Update Failed");
+			alert("Failed to update deviation tolerance: " + parsed.message);
+		} finally {
+			setIsSavingTolerance(false);
+		}
+	};
+
 	// Fetch connected RA Bills for this Work Order
 	const { data: connectedBills, isLoading: isLoadingBills } = useFrappeGetDocList("RA Bill", {
 		fields: [
@@ -1407,6 +1432,54 @@ function RABWorkOrderDetail({
 							<span className="text-slate-500 dark:text-[#8f93a7]">Defect Liability Period:</span>
 							<span className="font-semibold text-slate-900 dark:text-slate-100">{wo.defect_liability_period_days || 365} Days</span>
 						</div>
+						<div className="flex justify-between items-center border-b border-slate-100 dark:border-[#2d2d3f] pb-2">
+							<span className="text-slate-500 dark:text-[#8f93a7]">Deviation Tolerance:</span>
+							<div className="flex items-center gap-2">
+								{isEditingTolerance ? (
+									<div className="flex items-center gap-1.5">
+										<input
+											type="number"
+											step="any"
+											min="0"
+											value={editToleranceVal}
+											onChange={(e) => setEditToleranceVal(e.target.value === "" ? "" : Number(e.target.value))}
+											className="w-16 px-2 py-0.5 text-xs font-semibold bg-white dark:bg-[#1e1e2d] border border-indigo-500 rounded text-right text-slate-900 dark:text-slate-100 focus:outline-none"
+											autoFocus
+										/>
+										<span className="text-xs font-bold">%</span>
+										<button
+											onClick={handleSaveTolerance}
+											disabled={isSavingTolerance}
+											className="px-2 py-0.5 bg-emerald-600 dark:bg-[#28c76f] text-white rounded text-[11px] font-semibold hover:bg-emerald-700 transition cursor-pointer"
+										>
+											{isSavingTolerance ? "..." : "Save"}
+										</button>
+										<button
+											onClick={() => setIsEditingTolerance(false)}
+											className="px-1.5 py-0.5 text-slate-400 hover:text-slate-600 text-[11px] cursor-pointer"
+										>
+											✕
+										</button>
+									</div>
+								) : (
+									<div className="flex items-center gap-1.5">
+										<span className="font-semibold text-slate-900 dark:text-slate-100">
+											{wo.deviation_tolerance_percentage ?? 0}%
+										</span>
+										<button
+											onClick={() => {
+												setEditToleranceVal(wo.deviation_tolerance_percentage ?? 0);
+												setIsEditingTolerance(true);
+											}}
+											className="text-[11px] text-indigo-600 dark:text-[#7367f0] hover:underline font-medium ml-1 cursor-pointer"
+											title="Edit Deviation Tolerance %"
+										>
+											Edit
+										</button>
+									</div>
+								)}
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -1843,7 +1916,7 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 	}>>([]);
 
 	const [contractValue, setContractValue] = useState<number | "">("");
-	const [deviationTolerance, setDeviationTolerance] = useState(25);
+	const [deviationTolerance, setDeviationTolerance] = useState<number | "">(25);
 	const [mobilizationAdvance, setMobilizationAdvance] = useState(0);
 	const [applyGst, setApplyGst] = useState(true);
 	const [gstPercentage, setGstPercentage] = useState(18);
@@ -2073,7 +2146,7 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 			})),
 			total_boq_amount: totalBoqAmount,
 			contract_value: finalContractValue,
-			deviation_tolerance_percentage: Number(deviationTolerance),
+			deviation_tolerance_percentage: deviationTolerance === "" ? 25 : Number(deviationTolerance),
 			mobilization_advance_amount: Number(mobilizationAdvance),
 			apply_gst: applyGst ? 1 : 0,
 			gst_percentage: applyGst ? Number(gstPercentage) : 0,
@@ -2447,8 +2520,10 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 							<input
 								type="number"
 								step="any"
-								value={deviationTolerance === 0 ? "" : deviationTolerance}
-								onChange={(e) => setDeviationTolerance(e.target.value === "" ? 0 : Number(e.target.value))}
+								min="0"
+								placeholder="25"
+								value={deviationTolerance}
+								onChange={(e) => setDeviationTolerance(e.target.value === "" ? "" : Number(e.target.value))}
 								className="w-full p-2.5 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
 							/>
 						</div>

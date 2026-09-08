@@ -165,6 +165,7 @@
    "options": "currency"
   },
   {
+   "allow_on_submit": 1,
    "default": "25",
    "description": "Warn when cumulative qty exceeds Work Order qty by more than this % (deviation needs a Variation Order)",
    "fieldname": "deviation_tolerance_percentage",
