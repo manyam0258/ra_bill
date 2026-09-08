@@ -53,10 +53,13 @@ class RABill(Document):
 		self.mark_measurement_books(linked=False)
 
 	def _work_order(self):
-		"""Cached Work Order doc for this bill."""
-		if not getattr(self, "_wo_doc", None) and self.boq:
-			self._wo_doc = frappe.get_cached_doc(WORK_ORDER, self.boq)
-		return getattr(self, "_wo_doc", None)
+		"""Work Order doc for this bill."""
+		if not self.boq:
+			return None
+		wo = getattr(self, "_wo_doc", None)
+		if not wo or getattr(wo, "name", None) != self.boq:
+			self._wo_doc = frappe.get_doc(WORK_ORDER, self.boq)
+		return self._wo_doc
 
 	def set_defaults_from_work_order(self):
 		if not self.boq:
@@ -233,26 +236,28 @@ class RABill(Document):
 
 		billing_method = self.billing_method or wo.billing_method or "Item Rate (Measured)"
 		measured = billing_method == "Item Rate (Measured)"
+		tol = self._deviation_tolerance()
 
 		all_completed = True
 		for item in wo.items:
 			key = item.name or item.description
+			limit = flt(item.boq_qty) * (1.0 + tol / 100.0)
 			if measured:
 				p_qty = prev_qty_map.get(key, 0.0)
-				b_qty = flt(item.boq_qty)
-				if b_qty > 0 and p_qty < b_qty:
+				if limit > 0 and p_qty < (limit - 1e-6):
 					all_completed = False
 					break
 			else:
 				p_pct = prev_pct_map.get(key, 0.0)
-				if p_pct < 100.0:
+				pct_limit = 100.0 * (1.0 + tol / 100.0)
+				if p_pct < (pct_limit - 1e-6):
 					all_completed = False
 					break
 
-		contract_val = flt(wo.contract_value) or flt(wo.total_boq_amount)
+		contract_val = (flt(wo.contract_value) or flt(wo.total_boq_amount)) * (1.0 + tol / 100.0)
 		prev_work_val = flt(prev_doc.cumulative_work_value)
 
-		if (wo.items and all_completed) or (contract_val > 0 and prev_work_val >= contract_val):
+		if (wo.items and all_completed) or (contract_val > 0 and prev_work_val >= (contract_val - 1e-6)):
 			frappe.throw(
 				_("This Work Order {0} has already been fully billed. No further RA Bills can be created.").format(
 					self.boq
@@ -290,6 +295,11 @@ class RABill(Document):
 				row.deviation_qty = 0.0
 
 	def _deviation_tolerance(self):
+		if not self.boq:
+			return 0.0
+		val = frappe.db.get_value(WORK_ORDER, self.boq, "deviation_tolerance_percentage")
+		if val is not None:
+			return flt(val)
 		wo = self._work_order()
 		return flt(wo.deviation_tolerance_percentage) if wo else 0.0
 
@@ -300,17 +310,30 @@ class RABill(Document):
 		limit = flt(row.boq_qty) * (1.0 + tol / 100.0)
 		if flt(row.cumulative_qty) > (limit + 1e-6):
 			item_name = row.item_code or row.description or _("Row #{0}").format(row.idx)
+			disp_limit = round(limit, 4)
+			if disp_limit == int(disp_limit):
+				disp_limit = int(disp_limit)
+			disp_cum = round(flt(row.cumulative_qty), 4)
+			if disp_cum == int(disp_cum):
+				disp_cum = int(disp_cum)
+			disp_boq = round(flt(row.boq_qty), 4)
+			if disp_boq == int(disp_boq):
+				disp_boq = int(disp_boq)
+			disp_tol = round(tol, 2)
+			if disp_tol == int(disp_tol):
+				disp_tol = int(disp_tol)
+
 			if tol > 0:
 				msg = _(
 					"Row #{0} ({1}): Cumulative quantity {2} exceeds the Work Order contracted quantity of {3} "
 					"(allowed limit with {4}% deviation tolerance is {5}). "
 					"A Variation Order is required to proceed beyond this limit."
-				).format(row.idx, item_name, flt(row.cumulative_qty), flt(row.boq_qty), tol, limit)
+				).format(row.idx, item_name, disp_cum, disp_boq, disp_tol, disp_limit)
 			else:
 				msg = _(
 					"Row #{0} ({1}): Cumulative quantity {2} exceeds the Work Order contracted quantity of {3}. "
 					"A Variation Order is required to proceed beyond this limit."
-				).format(row.idx, item_name, flt(row.cumulative_qty), flt(row.boq_qty))
+				).format(row.idx, item_name, disp_cum, disp_boq)
 			frappe.throw(msg, title=_("Quantity Exceeds Work Order Limit"))
 
 	def calculate_child_lines(self):
