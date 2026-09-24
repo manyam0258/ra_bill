@@ -19,6 +19,10 @@
   "previous_qty",
   "cumulative_qty",
   "current_qty",
+  "reject_qty",
+  "approved_qty",
+  "hold_qty",
+  "original_hold_qty",
   "deviation_qty",
   "previous_percent",
   "cumulative_percent",
@@ -123,6 +127,36 @@
    "fieldtype": "Float",
    "in_list_view": 1,
    "label": "This Bill Qty",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Quantity permanently disallowed; not billed or paid",
+   "fieldname": "reject_qty",
+   "fieldtype": "Float",
+   "label": "Reject Qty"
+  },
+  {
+   "default": "0",
+   "description": "Quantity approved for billing (This Bill Qty - Reject Qty)",
+   "fieldname": "approved_qty",
+   "fieldtype": "Float",
+   "label": "Approved Qty",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Subset of approved quantity deferred from payment pending approval",
+   "fieldname": "hold_qty",
+   "fieldtype": "Float",
+   "label": "Hold Qty"
+  },
+  {
+   "default": "0",
+   "description": "Originally entered hold quantity before any reductions from payment entries",
+   "fieldname": "original_hold_qty",
+   "fieldtype": "Float",
+   "label": "Original Hold Qty",
    "read_only": 1
   },
   {

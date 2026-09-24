@@ -135,14 +135,48 @@ def create_payment_entry_from_invoice(
 	reference_date: str = None,
 	mode_of_payment: str = None,
 	paid_from: str = None,
+	auto_submit: bool = False,
+	custom_amount: float = None,
 ):
 	"""
 	Creates a Payment Entry linked to a Purchase Invoice using ERPNext's get_payment_entry logic.
-	Accepts optional reference_no, reference_date, mode_of_payment, and paid_from.
+	Accepts optional reference_no, reference_date, mode_of_payment, paid_from, auto_submit, and custom_amount.
 	Auto-resolves paid_from from Mode of Payment and Company if not explicitly supplied.
+
+	When custom_amount is provided:
+	Validates 0 < custom_amount <= outstanding_amount.
+	Allocates custom_amount directly as paid_amount / allocated_amount.
+
+	When custom_amount is omitted (default):
+	Hold-fraction logic: when the linked RA Bill has a hold portion and it is the first PE,
+	the PE's paid_amount and allocated_amount are reduced to the "immediately payable"
+	amount only. This leaves the hold portion as PI outstanding_amount to be cleared by subsequent PEs.
+
+	auto_submit defaults to False — the PE is always left in Draft for the user
+	to review and manually submit. Pass auto_submit=True only if an explicit
+	auto-submit is required.
 	"""
 	from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
-	from frappe.utils import nowdate
+	from frappe.utils import nowdate, flt as _flt
+
+	# Parse and validate custom_amount if provided
+	if custom_amount is not None and str(custom_amount).strip() != "":
+		custom_amount = round(_flt(custom_amount), 2)
+	else:
+		custom_amount = None
+
+	pi_doc = frappe.get_doc("Purchase Invoice", invoice_name)
+	pi_outstanding = round(_flt(pi_doc.outstanding_amount), 2)
+
+	if custom_amount is not None:
+		if custom_amount <= 0:
+			frappe.throw(_("Amount to Pay must be greater than 0."))
+		if custom_amount > pi_outstanding + 0.005:
+			frappe.throw(
+				_("Allocated Amount cannot be greater than outstanding amount ({0}).").format(
+					frappe.format_value(pi_outstanding, {"fieldtype": "Currency"})
+				)
+			)
 
 	# Sensible defaults so Bank account validation never fails
 	if not reference_date:
@@ -167,11 +201,105 @@ def create_payment_entry_from_invoice(
 		if res.get("account"):
 			pe.paid_from = res["account"]
 
+	# Set dedicated work_order field on PE and remove any RAB Work Order rows from references table
+	ra_bill_name = frappe.db.get_value("Purchase Invoice", invoice_name, "ra_bill")
+	if ra_bill_name:
+		wo_name = frappe.db.get_value("RA Bill", ra_bill_name, "boq")
+		if wo_name:
+			pe.work_order = wo_name
+
+	pe.references = [r for r in pe.references if r.reference_doctype != "RAB Work Order"]
+
+	# Check if any submitted PE already exists for this invoice
+	existing_pe_count = frappe.db.count(
+		"Payment Entry Reference",
+		filters={
+			"reference_doctype": "Purchase Invoice",
+			"reference_name": invoice_name,
+			"docstatus": 1,
+		},
+	)
+	is_first_pe = existing_pe_count == 0
+
+	immediately_payable_override = None  # will be set if auto-calculated hold override applies
+
+	if custom_amount is not None:
+		# User specified custom payment amount
+		total_ra_deductions = 0.0
+		if is_first_pe and ra_bill_name:
+			ra_bill = frappe.get_doc("RA Bill", ra_bill_name)
+			net_payable = _flt(ra_bill.get("net_payable"))
+			pi_grand_total = _flt(frappe.db.get_value("Purchase Invoice", invoice_name, "grand_total"))
+			total_ra_deductions = max(0.0, pi_grand_total - net_payable)
+
+		ref_allocated = round(min(pi_outstanding, custom_amount + total_ra_deductions), 2)
+		for ref in pe.get("references", []):
+			if ref.reference_doctype == "Purchase Invoice" and ref.reference_name == invoice_name:
+				ref.allocated_amount = ref_allocated
+				break
+
+		pe.paid_amount = custom_amount
+		pe.received_amount = custom_amount
+	else:
+		# ── Default Hold-fraction adjustment ─────────────────────────────────────
+		# Only applies to the FIRST Payment Entry for this Purchase Invoice when custom_amount not given.
+		# For subsequent PEs (e.g. clearing the deferred Hold portion), the PI's
+		# current outstanding_amount already correctly represents the remaining
+		# balance, so ERPNext's standard get_payment_entry handles it naturally.
+		if is_first_pe and ra_bill_name:
+			ra_bill = frappe.get_doc("RA Bill", ra_bill_name)
+			gross_work_value = _flt(ra_bill.get("gross_work_value"))
+			total_hold_value = _flt(ra_bill.get("total_hold_value"))
+			net_payable = _flt(ra_bill.get("net_payable"))
+
+			if gross_work_value > 0 and total_hold_value > 0 and net_payable > 0:
+				hold_fraction = total_hold_value / gross_work_value
+				immediately_payable_override = round(max(0.0, net_payable * (1.0 - hold_fraction)), 2)
+
+				pi_grand_total = _flt(frappe.db.get_value("Purchase Invoice", invoice_name, "grand_total"))
+				total_ra_deductions = max(0.0, pi_grand_total - net_payable)
+				gross_hold_allocated = round(immediately_payable_override + total_ra_deductions, 2)
+
+				for ref in pe.get("references", []):
+					if ref.reference_doctype == "Purchase Invoice" and ref.reference_name == invoice_name:
+						ref.allocated_amount = gross_hold_allocated
+						break
+
 	pe.insert(ignore_permissions=True)
-	try:
-		pe.submit()
-	except Exception as e:
-		frappe.log_error(f"Failed to auto-submit Payment Entry {pe.name}: {e}")
+
+	# Ensure paid_amount / received_amount matches target amount after insert hooks
+	target_paid_amount = custom_amount if custom_amount is not None else immediately_payable_override
+	if target_paid_amount is not None:
+		frappe.db.set_value(
+			"Payment Entry",
+			pe.name,
+			{
+				"paid_amount": target_paid_amount,
+				"received_amount": target_paid_amount,
+				"base_paid_amount": target_paid_amount,
+				"base_received_amount": target_paid_amount,
+			},
+			update_modified=False,
+		)
+
+	# Extra safety: ensure no RAB Work Order reference row exists in the child table
+	frappe.db.sql(
+		"""
+		DELETE FROM `tabPayment Entry Reference`
+		WHERE parent = %s AND reference_doctype = 'RAB Work Order'
+		""",
+		(pe.name,),
+	)
+
+	# Issue 2: only submit when explicitly requested (auto_submit=True, default False).
+	# The manual "Create Payment Entry" dialog sends auto_submit=False so the PE stays
+	# in Draft for the user to review before submitting themselves.
+	if auto_submit:
+		try:
+			pe.reload()  # Reload so submit sees the db_set values
+			pe.submit()
+		except Exception as e:
+			frappe.log_error(f"Failed to auto-submit Payment Entry {pe.name}: {e}")
 	return {"payment_entry": pe.name}
 
 
@@ -226,11 +354,14 @@ def get_linked_payment_entries(doctype: str, name: str):
 			"""
 			SELECT DISTINCT pe.name, pe.posting_date, pe.party_type, pe.party, pe.party_name, pe.paid_amount, pe.received_amount, pe.docstatus, pe.payment_type
 			FROM `tabPayment Entry` pe
-			INNER JOIN `tabPayment Entry Reference` per ON per.parent = pe.name
-			WHERE per.reference_doctype = 'RAB Work Order' AND per.reference_name = %s
+			LEFT JOIN `tabPayment Entry Reference` per ON per.parent = pe.name
+			WHERE pe.docstatus != 2 AND (
+				pe.work_order = %s
+				OR (per.reference_doctype = 'RAB Work Order' AND per.reference_name = %s)
+			)
 			ORDER BY pe.creation DESC
 		""",
-			(name,),
+			(name, name),
 			as_dict=True,
 		)
 
@@ -314,19 +445,23 @@ def get_rab_ledger(work_order=None, supplier=None):
 	if wo_names:
 		refs_to_check.extend([("RAB Work Order", w) for w in wo_names])
 
-	if refs_to_check:
+	if refs_to_check or wo_names:
 		where_clauses = []
 		params = []
 		for dt, dn in refs_to_check:
 			where_clauses.append("(per.reference_doctype = %s AND per.reference_name = %s)")
 			params.extend([dt, dn])
 
+		if wo_names:
+			where_clauses.append("pe.work_order IN %s")
+			params.append(tuple(wo_names))
+
 		clause_str = " OR ".join(where_clauses)
 		payment_entries = frappe.db.sql(
 			f"""
 			SELECT DISTINCT pe.name, pe.posting_date, pe.party_type, pe.party, pe.party_name, pe.paid_amount, pe.received_amount, pe.docstatus, per.reference_doctype, per.reference_name
 			FROM `tabPayment Entry` pe
-			INNER JOIN `tabPayment Entry Reference` per ON per.parent = pe.name
+			LEFT JOIN `tabPayment Entry Reference` per ON per.parent = pe.name
 			WHERE pe.docstatus != 2 AND ({clause_str})
 			ORDER BY pe.posting_date asc
 		""",
@@ -430,3 +565,14 @@ def get_work_order_advances(work_order: str = None):
 		fields=["name", "parent", "advance_type", "description", "amount", "payment_entry"],
 		order_by="idx asc",
 	)
+
+
+@frappe.whitelist()
+def sync_ra_bill_hold_qty(ra_bill_name: str, invoice_name: str = None):
+	"""
+	Whitelisted endpoint to recalculate and sync hold_qty and total_hold_value for an RA Bill.
+	"""
+	from ra_bill.overrides.payment_entry import recalculate_ra_bill_hold_qty
+	recalculate_ra_bill_hold_qty(ra_bill_name, invoice_name=invoice_name)
+	return {"status": "ok"}
+

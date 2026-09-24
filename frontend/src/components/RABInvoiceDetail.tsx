@@ -35,6 +35,24 @@ interface RABInvoiceDetailProps {
 
 export function RABInvoiceDetail({ invoiceId, onBack, onSelectPaymentEntry }: RABInvoiceDetailProps) {
 	const { data: doc, isLoading, mutate } = useFrappeGetDoc("Purchase Invoice", invoiceId);
+	// Fetch the linked RA Bill so we can show hold_qty / reject_qty per item
+	const raBillName: string | undefined = (doc as any)?.ra_bill;
+	// frappe-react-sdk skips the fetch when docname is falsy ("")
+	const { data: raBillDoc } = useFrappeGetDoc(
+		"RA Bill",
+		raBillName ?? "",
+	);
+	const raBillItems: any[] = (raBillDoc as any)?.items ?? [];
+	// Build a lookup: item_code → { hold_qty, reject_qty } from RA Bill items
+	const raBillItemMap = raBillItems.reduce<Record<string, { hold_qty: number; reject_qty: number }>>((acc, row) => {
+		if (row.item_code) {
+			acc[row.item_code] = {
+				hold_qty: Number(row.hold_qty ?? 0),
+				reject_qty: Number(row.reject_qty ?? 0),
+			};
+		}
+		return acc;
+	}, {});
 	const [activeSubTab, setActiveSubTab] = useState<"details" | "payments" | "terms" | "more" | "connections">("details");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isCreatingPE, setIsCreatingPE] = useState(false);
@@ -46,11 +64,31 @@ export function RABInvoiceDetail({ invoiceId, onBack, onSelectPaymentEntry }: RA
 	const [selectedMopInv, setSelectedMopInv] = useState("");
 	const [mopTypeInv, setMopTypeInv] = useState<"Bank" | "Cash" | "">(" ".trim() as any);
 	const [paidFromInv, setPaidFromInv] = useState("");
+	const [amountToPayInv, setAmountToPayInv] = useState("");
+	const [qtyToPayInv, setQtyToPayInv] = useState("");
 	const [pePostingDateInv, setPePostingDateInv] = useState(new Date().toISOString().split("T")[0]);
 	const [peRefNoInv, setPeRefNoInv] = useState("");
 	const [peRefDateInv, setPeRefDateInv] = useState(new Date().toISOString().split("T")[0]);
 	const [isSubmittingPEInv, setIsSubmittingPEInv] = useState(false);
 	const [peErrorInv, setPeErrorInv] = useState("");
+
+	// Determine the effective rate to use for qty <-> amount conversion:
+	// If the RA Bill's Hold portion is on a single item row, use that row's actual rate.
+	// If Hold is spread across multiple rows (rare edge case already noted in the partial-hold-payment feature),
+	// use blended average rate = total_hold_value / total_hold_qty (same approach already used for proportional hold_qty reduction).
+	const holdRows = raBillItems.filter((r) => Number(r.original_hold_qty || r.hold_qty || 0) > 0);
+	let effectiveHoldRate = 0;
+	if (holdRows.length === 1) {
+		effectiveHoldRate = Number(holdRows[0].rate || 0);
+	} else if (holdRows.length > 1) {
+		const totalHoldVal = Number((raBillDoc as any)?.total_hold_value || (raBillDoc as any)?.original_total_hold_value || 0);
+		const totalHoldQ = Number((raBillDoc as any)?.total_hold_qty || (raBillDoc as any)?.original_total_hold_qty || 0);
+		effectiveHoldRate = totalHoldQ > 0 ? totalHoldVal / totalHoldQ : Number(holdRows[0].rate || 0);
+	} else if (raBillItems.length > 0) {
+		effectiveHoldRate = Number(raBillItems[0].rate || 0);
+	}
+
+	const pendingHoldQty = raBillItems.reduce((acc, r) => acc + Number(r.hold_qty ?? 0), 0);
 
 	const fetchLinkedPEs = async () => {
 		try {
@@ -75,22 +113,10 @@ export function RABInvoiceDetail({ invoiceId, onBack, onSelectPaymentEntry }: RA
 		setIsSubmitting(true);
 		try {
 			await callFrappeMethod("ra_bill.api.submit_document", { doctype: "Purchase Invoice", name: invoiceId });
+			// Only submit the PI — do NOT auto-create a Payment Entry here.
+			// The user must click "Make Payment (PE)" to open the dialog and
+			// create a Draft PE for review before manually submitting it.
 			mutate();
-			try {
-				const peRes = await callFrappeMethod("ra_bill.api.create_payment_entry_from_invoice", {
-					invoice_name: invoiceId,
-					reference_no: `PAY-${invoiceId}`,
-					reference_date: new Date().toISOString().split("T")[0],
-				});
-				const peId = peRes.payment_entry || peRes;
-				if (onSelectPaymentEntry) {
-					onSelectPaymentEntry(peId);
-				}
-			} catch (ePE) {
-				if (onSelectPaymentEntry && linkedPEs.length > 0) {
-					onSelectPaymentEntry(linkedPEs[0].name);
-				}
-			}
 		} catch (err: any) {
 			const parsed = parseFrappeError(err, "Submit Invoice Failed");
 			alert(parsed.message);
@@ -140,7 +166,58 @@ export function RABInvoiceDetail({ invoiceId, onBack, onSelectPaymentEntry }: RA
 		} finally {
 			setIsCreatingPE(false);
 		}
+
+		// Calculate default amount to pay:
+		// First PE with hold on an RA Bill defaults to immediately payable; subsequent PEs or non-hold bills default to outstanding
+		const outstanding = Number(doc?.outstanding_amount ?? 0);
+		let defaultAmount = outstanding;
+		const hasSubmittedPE = (linkedPEs || []).some((pe: any) => pe.docstatus === 1);
+		if (!hasSubmittedPE && raBillDoc) {
+			const gross = Number((raBillDoc as any).gross_work_value ?? 0);
+			const hold = Number((raBillDoc as any).total_hold_value ?? 0);
+			const net = Number((raBillDoc as any).net_payable ?? 0);
+			if (gross > 0 && hold > 0 && net > 0) {
+				const holdFraction = hold / gross;
+				const immPayable = Math.round(Math.max(0, net * (1 - holdFraction)) * 100) / 100;
+				defaultAmount = Math.min(immPayable, outstanding);
+			}
+		}
+		setAmountToPayInv(defaultAmount > 0 ? defaultAmount.toString() : (outstanding > 0 ? outstanding.toString() : "0"));
+		if (effectiveHoldRate > 0 && defaultAmount > 0) {
+			const derivedQty = Math.round((defaultAmount / effectiveHoldRate) * 100) / 100;
+			setQtyToPayInv(derivedQty.toString());
+		} else {
+			setQtyToPayInv("");
+		}
 		setShowPEDialog(true);
+	};
+
+	const handleQtyChangeInv = (qStr: string) => {
+		setQtyToPayInv(qStr);
+		setPeErrorInv("");
+		if (qStr === "" || isNaN(parseFloat(qStr))) {
+			setAmountToPayInv("");
+			return;
+		}
+		const q = parseFloat(qStr);
+		if (effectiveHoldRate > 0) {
+			const calculatedAmt = Math.round(q * effectiveHoldRate * 100) / 100;
+			setAmountToPayInv(calculatedAmt.toString());
+		}
+	};
+
+	const handleAmountChangeInv = (amtStr: string) => {
+		setAmountToPayInv(amtStr);
+		setPeErrorInv("");
+		if (amtStr === "" || isNaN(parseFloat(amtStr))) {
+			setQtyToPayInv("");
+			return;
+		}
+		const amt = parseFloat(amtStr);
+		if (effectiveHoldRate > 0) {
+			const calculatedQty = Math.round((amt / effectiveHoldRate) * 100) / 100;
+			setQtyToPayInv(calculatedQty.toString());
+		}
 	};
 
 	const handleMopChangeInv = async (mopName: string) => {
@@ -162,6 +239,34 @@ export function RABInvoiceDetail({ invoiceId, onBack, onSelectPaymentEntry }: RA
 		if (isSubmittingPEInv || !showPEDialog) return;
 		setPeErrorInv("");
 
+		// Client-side Amount & Qty to Pay validation
+		const parsedAmount = parseFloat(amountToPayInv);
+		const parsedQty = parseFloat(qtyToPayInv);
+		const outstanding = Number(doc?.outstanding_amount ?? 0);
+		const hasSubmittedPE = (linkedPEs || []).some((pe: any) => pe.docstatus === 1);
+		const maxAllowedQty = hasSubmittedPE && pendingHoldQty > 0
+			? pendingHoldQty
+			: (effectiveHoldRate > 0 ? Math.round((outstanding / effectiveHoldRate) * 100) / 100 : 0);
+
+		if (isNaN(parsedAmount) || parsedAmount <= 0) {
+			setPeErrorInv("Please enter a valid Amount to Pay greater than 0.");
+			return;
+		}
+		if (parsedAmount > outstanding + 0.005) {
+			setPeErrorInv(`Amount to Pay cannot exceed remaining outstanding (${formatCurrency(outstanding)}).`);
+			return;
+		}
+		if (effectiveHoldRate > 0 && !isNaN(parsedQty)) {
+			if (parsedQty <= 0) {
+				setPeErrorInv("Qty to Pay must be greater than 0.");
+				return;
+			}
+			if (parsedQty > maxAllowedQty + 0.005) {
+				setPeErrorInv(`Qty to Pay cannot exceed ${hasSubmittedPE && pendingHoldQty > 0 ? `pending hold qty (${pendingHoldQty})` : `maximum allowed qty (${maxAllowedQty})`}.`);
+				return;
+			}
+		}
+
 		// Client-side Bank validation — mirrors ERPNext validate_reference_details
 		if (mopTypeInv === "Bank") {
 			if (!peRefNoInv.trim()) {
@@ -182,13 +287,17 @@ export function RABInvoiceDetail({ invoiceId, onBack, onSelectPaymentEntry }: RA
 				reference_date: peRefDateInv || new Date().toISOString().split("T")[0],
 				...(selectedMopInv ? { mode_of_payment: selectedMopInv } : {}),
 				...(paidFromInv ? { paid_from: paidFromInv } : {}),
+				custom_amount: parsedAmount,
+				// Leave as Draft so user can review before submitting
+				auto_submit: false,
 			});
 			const peId = res.payment_entry || res;
 			setShowPEDialog(false);
+			fetchLinkedPEs();
+			// Navigate to the draft PE so user can review & manually submit
 			if (onSelectPaymentEntry) {
 				onSelectPaymentEntry(peId);
 			}
-			fetchLinkedPEs();
 		} catch (err: any) {
 			const parsed = parseFrappeError(err, "Payment Entry Creation Failed");
 			setPeErrorInv(parsed.message);
@@ -230,6 +339,12 @@ export function RABInvoiceDetail({ invoiceId, onBack, onSelectPaymentEntry }: RA
 	const taxesDeducted = Number(doc.taxes_and_charges_deducted || taxesList.reduce((acc: number, t: any) => acc + (t.tax_amount < 0 ? Math.abs(Number(t.tax_amount)) : 0), 0));
 	const totalTaxes = Number(doc.total_taxes_and_charges || (taxesAdded - taxesDeducted));
 
+	// Issue 3: Hold-pending state — true when the PI has outstanding balance AND the
+	// linked RA Bill has a hold portion (i.e. a partial-payment was made for the
+	// immediately-payable fraction and the hold deferred portion is still outstanding).
+	const raBillHoldValue = Number((raBillDoc as any)?.total_hold_value ?? 0);
+	const isHoldPending = doc.docstatus === 1 && outstandingAmount > 0.005 && raBillHoldValue > 0.005;
+
 	return (
 		<div className="space-y-6 text-slate-800 dark:text-slate-100 transition-colors duration-200 pb-12">
 
@@ -244,16 +359,24 @@ export function RABInvoiceDetail({ invoiceId, onBack, onSelectPaymentEntry }: RA
 						<span>Back</span>
 					</button>
 					<div>
-						<div className="flex items-center gap-2.5">
+						<div className="flex items-center gap-2.5 flex-wrap">
 							<h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{doc.name}</h2>
-							<span className={`px-3 py-0.5 rounded-full text-xs font-bold ${outstandingAmount === 0 || doc.status === "Paid"
-								? "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30"
-								: doc.status === "Overdue"
-									? "bg-rose-500/15 text-rose-600 border border-rose-500/30"
-									: "bg-amber-500/15 text-amber-600 border border-amber-500/30"
+							{isHoldPending ? (
+								<span className="px-3 py-0.5 rounded-full text-xs font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
+									<span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+									Hold Pending — {formatCurrency(outstandingAmount, doc.currency)} outstanding
+								</span>
+							) : (
+								<span className={`px-3 py-0.5 rounded-full text-xs font-bold ${
+									outstandingAmount === 0 || doc.status === "Paid"
+										? "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30"
+										: doc.status === "Overdue"
+											? "bg-rose-500/15 text-rose-600 border border-rose-500/30"
+											: "bg-amber-500/15 text-amber-600 border border-amber-500/30"
 								}`}>
-								{doc.status || (outstandingAmount === 0 ? "Paid" : "Unpaid")}
-							</span>
+									{doc.status || (outstandingAmount === 0 ? "Paid" : "Unpaid")}
+								</span>
+							)}
 						</div>
 						<p className="text-xs text-slate-500 dark:text-[#8f93a7] mt-0.5">
 							Supplier: <span className="font-bold text-slate-800 dark:text-slate-200">{doc.supplier || "-"}</span>
@@ -478,14 +601,18 @@ export function RABInvoiceDetail({ invoiceId, onBack, onSelectPaymentEntry }: RA
 									<tr>
 										<th className="p-3.5 w-10">No.</th>
 										<th className="p-3.5">Item Code & Description</th>
-										<th className="p-3.5 text-right">Qty</th>
+										<th className="p-3.5 text-right">Qty (Approved)</th>
+										<th className="p-3.5 text-right">Reject Qty</th>
+										<th className="p-3.5 text-right" title="Included within the Approved Qty above — payment deferred pending further approval">Hold Qty ⊂ Approved</th>
 										<th className="p-3.5 text-right">Rate</th>
 										<th className="p-3.5 text-right">Amount ({doc.currency || "INR"})</th>
 									</tr>
 								</thead>
 								<tbody className="divide-y divide-slate-200/80 dark:divide-[#2d2d3f]">
 									{doc.items && doc.items.length > 0 ? (
-										doc.items.map((it: any, idx: number) => (
+										doc.items.map((it: any, idx: number) => {
+											const raRow = raBillItemMap[it.item_code] ?? { hold_qty: 0, reject_qty: 0 };
+											return (
 											<tr key={idx} className="hover:bg-slate-50/80 dark:hover:bg-[#1e1e2d]/70 transition">
 												<td className="p-3.5 text-slate-400 font-semibold">{idx + 1}</td>
 												<td className="p-3.5 font-bold text-slate-900 dark:text-slate-100">
@@ -493,26 +620,61 @@ export function RABInvoiceDetail({ invoiceId, onBack, onSelectPaymentEntry }: RA
 													<span className="font-normal text-slate-600 dark:text-slate-300">{it.item_name || it.description || "-"}</span>
 												</td>
 												<td className="p-3.5 text-right font-medium">{it.qty}</td>
+												<td className="p-3.5 text-right font-medium">
+													{raRow.reject_qty > 0 ? (
+														<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 font-semibold">
+															{raRow.reject_qty}
+														</span>
+													) : (
+														<span className="text-slate-400">—</span>
+													)}
+												</td>
+												<td className="p-3.5 text-right font-medium">
+													{raRow.hold_qty > 0 ? (
+														<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-semibold" title="Included in Approved Qty — payment deferred">
+															{raRow.hold_qty}
+														</span>
+													) : (
+														<span className="text-slate-400">—</span>
+													)}
+												</td>
 												<td className="p-3.5 text-right font-medium">{formatCurrency(it.rate, doc.currency)}</td>
 												<td className="p-3.5 text-right font-bold text-slate-900 dark:text-slate-100">{formatCurrency(it.amount, doc.currency)}</td>
 											</tr>
-										))
+											);
+										})
 									) : (
 										<tr>
-											<td colSpan={5} className="p-6 text-center text-slate-400">No items found in this invoice.</td>
+											<td colSpan={7} className="p-6 text-center text-slate-400">No items found in this invoice.</td>
 										</tr>
 									)}
 								</tbody>
 							</table>
 						</div>
 
-						<div className="p-4 bg-slate-50 dark:bg-[#1e1e2d] border-t border-slate-200 dark:border-[#32344d] flex justify-between items-center text-xs">
-							<span className="font-bold text-slate-500 dark:text-[#8f93a7] uppercase">
-								Total Quantity: <strong className="text-slate-900 dark:text-slate-100">{totalQty}</strong>
-							</span>
-							<span className="font-bold text-slate-800 dark:text-slate-200">
-								Net Total ({doc.currency || "INR"}): <strong className="text-base font-black text-indigo-600 dark:text-[#7367f0]">{formatCurrency(netTotal, doc.currency)}</strong>
-							</span>
+						<div className="p-4 bg-slate-50 dark:bg-[#1e1e2d] border-t border-slate-200 dark:border-[#32344d] space-y-2 text-xs">
+							<div className="flex justify-between items-center">
+								<span className="font-bold text-slate-500 dark:text-[#8f93a7] uppercase">
+									Total Quantity (Approved): <strong className="text-slate-900 dark:text-slate-100">{totalQty}</strong>
+								</span>
+								<span className="font-bold text-slate-800 dark:text-slate-200">
+									Net Total ({doc.currency || "INR"}): <strong className="text-base font-black text-indigo-600 dark:text-[#7367f0]">{formatCurrency(netTotal, doc.currency)}</strong>
+								</span>
+							</div>
+							{(() => {
+								const holdTotalValue = Number((raBillDoc as any)?.total_hold_value ?? 0);
+								const totalHoldQty = raBillItems.reduce((sum, r) => sum + Number(r.hold_qty ?? 0), 0);
+								if (totalHoldQty <= 0) return null;
+								return (
+									<div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 text-xs">
+										<span className="inline-block w-2 h-2 rounded-full bg-amber-400 flex-shrink-0"></span>
+										<span>
+											Includes <strong>{formatCurrency(holdTotalValue, doc.currency)}</strong> pending Hold
+											({totalHoldQty} qty) — billed but payment deferred.
+										</span>
+									</div>
+								);
+							})()}
 						</div>
 					</div>
 
@@ -762,6 +924,88 @@ export function RABInvoiceDetail({ invoiceId, onBack, onSelectPaymentEntry }: RA
 								/>
 							</div>
 
+							{/* Qty to Pay and Amount to Pay (Synced together) */}
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+								{/* Qty to Pay */}
+								<div>
+									<div className="flex items-center justify-between mb-1">
+										<label className="text-slate-600 dark:text-[#8f93a7] font-semibold">
+											Qty to Pay {pendingHoldQty > 0 ? `(${pendingHoldQty} pending)` : ""} <span className="text-rose-500">*</span>
+										</label>
+										{effectiveHoldRate > 0 && (
+											<span className="text-[11px] text-slate-400">
+												Rate: {formatCurrency(effectiveHoldRate)}
+											</span>
+										)}
+									</div>
+									<input
+										type="number"
+										step="0.01"
+										min="0.01"
+										value={qtyToPayInv}
+										onChange={(e) => handleQtyChangeInv(e.target.value)}
+										placeholder="0.00"
+										className={`w-full px-3 py-2.5 bg-slate-50 dark:bg-[#1e1e2d] border rounded-xl text-slate-800 dark:text-slate-200 font-medium focus:outline-none ${
+											(effectiveHoldRate > 0 && parseFloat(qtyToPayInv) > ((linkedPEs || []).some((pe: any) => pe.docstatus === 1) && pendingHoldQty > 0 ? pendingHoldQty : (effectiveHoldRate > 0 ? Math.round((Number(doc?.outstanding_amount ?? 0) / effectiveHoldRate) * 100) / 100 : 0)) + 0.005) || (qtyToPayInv !== "" && parseFloat(qtyToPayInv) <= 0)
+												? "border-rose-400 dark:border-rose-500/50"
+												: "border-slate-200 dark:border-[#32344d]"
+										}`}
+									/>
+								</div>
+
+								{/* Amount to Pay */}
+								<div>
+									<div className="flex items-center justify-between mb-1">
+										<label className="text-slate-600 dark:text-[#8f93a7] font-semibold">
+											Amount to Pay <span className="text-rose-500">*</span>
+										</label>
+										<span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+											Bal: <span className="font-semibold text-slate-700 dark:text-slate-200">{formatCurrency(Number(doc?.outstanding_amount ?? 0))}</span>
+										</span>
+									</div>
+									<div className="relative">
+										<span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-xs">
+											₹
+										</span>
+										<input
+											type="number"
+											step="0.01"
+											min="0.01"
+											max={Number(doc?.outstanding_amount ?? 0)}
+											value={amountToPayInv}
+											onChange={(e) => handleAmountChangeInv(e.target.value)}
+											placeholder="0.00"
+											className={`w-full pl-7 pr-3 py-2.5 bg-slate-50 dark:bg-[#1e1e2d] border rounded-xl text-slate-800 dark:text-slate-200 font-medium focus:outline-none ${
+												parseFloat(amountToPayInv) > Number(doc?.outstanding_amount ?? 0) + 0.005 || (amountToPayInv !== "" && parseFloat(amountToPayInv) <= 0)
+													? "border-rose-400 dark:border-rose-500/50"
+													: "border-slate-200 dark:border-[#32344d]"
+											}`}
+										/>
+									</div>
+								</div>
+							</div>
+
+							{parseFloat(amountToPayInv) > Number(doc?.outstanding_amount ?? 0) + 0.005 && (
+								<p className="mt-1 text-[11px] text-rose-600 dark:text-rose-400 font-semibold">
+									Amount cannot exceed remaining outstanding balance ({formatCurrency(Number(doc?.outstanding_amount ?? 0))}).
+								</p>
+							)}
+							{effectiveHoldRate > 0 && parseFloat(qtyToPayInv) > ((linkedPEs || []).some((pe: any) => pe.docstatus === 1) && pendingHoldQty > 0 ? pendingHoldQty : (effectiveHoldRate > 0 ? Math.round((Number(doc?.outstanding_amount ?? 0) / effectiveHoldRate) * 100) / 100 : 0)) + 0.005 && (
+								<p className="mt-1 text-[11px] text-rose-600 dark:text-rose-400 font-semibold">
+									Qty to Pay cannot exceed {(linkedPEs || []).some((pe: any) => pe.docstatus === 1) && pendingHoldQty > 0 ? `pending hold qty (${pendingHoldQty})` : `maximum allowed qty (${effectiveHoldRate > 0 ? Math.round((Number(doc?.outstanding_amount ?? 0) / effectiveHoldRate) * 100) / 100 : 0})`}.
+								</p>
+							)}
+							{((amountToPayInv !== "" && parseFloat(amountToPayInv) <= 0) || (qtyToPayInv !== "" && parseFloat(qtyToPayInv) <= 0)) && (
+								<p className="mt-1 text-[11px] text-rose-600 dark:text-rose-400 font-semibold">
+									Amount and Qty must be greater than 0.
+								</p>
+							)}
+							{!linkedPEs.some((pe: any) => pe.docstatus === 1) && Number((raBillDoc as any)?.total_hold_value ?? 0) > 0 && (
+								<p className="mt-1 text-[11px] text-slate-500 dark:text-[#8f93a7]">
+									Default is immediately payable. The remaining hold portion ({pendingHoldQty} pending) can be paid in later Payment Entries.
+								</p>
+							)}
+
 							<div>
 								<label className="block text-slate-600 dark:text-[#8f93a7] font-semibold mb-1">
 									Posting Date <span className="text-rose-500">*</span>
@@ -798,7 +1042,22 @@ export function RABInvoiceDetail({ invoiceId, onBack, onSelectPaymentEntry }: RA
 
 							<div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-[#32344d]">
 								<button type="button" onClick={() => setShowPEDialog(false)} disabled={isSubmittingPEInv} className="px-4 py-2 bg-slate-100 dark:bg-[#1e1e2d] hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl font-semibold transition cursor-pointer">Cancel</button>
-								<button type="button" onClick={handleCreatePaymentEntry} disabled={isSubmittingPEInv} className="px-4 py-2 bg-indigo-600 dark:bg-[#7367f0] hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+								<button
+									type="button"
+									onClick={handleCreatePaymentEntry}
+									disabled={
+										isSubmittingPEInv ||
+										isNaN(parseFloat(amountToPayInv)) ||
+										parseFloat(amountToPayInv) <= 0 ||
+										parseFloat(amountToPayInv) > Number(doc?.outstanding_amount ?? 0) + 0.005 ||
+										(effectiveHoldRate > 0 && (
+											isNaN(parseFloat(qtyToPayInv)) ||
+											parseFloat(qtyToPayInv) <= 0 ||
+											parseFloat(qtyToPayInv) > ((linkedPEs || []).some((pe: any) => pe.docstatus === 1) && pendingHoldQty > 0 ? pendingHoldQty : (effectiveHoldRate > 0 ? Math.round((Number(doc?.outstanding_amount ?? 0) / effectiveHoldRate) * 100) / 100 : 0)) + 0.005
+										))
+									}
+									className="px-4 py-2 bg-indigo-600 dark:bg-[#7367f0] hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+								>
 									<DollarSign size={14} />
 									<span>{isSubmittingPEInv ? "Creating..." : "Create Payment Entry"}</span>
 								</button>

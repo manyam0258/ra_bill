@@ -39,16 +39,19 @@ def get_reference_details(
         # Total advances already paid against this Work Order
         already_paid = frappe.db.sql(
             """
-            SELECT COALESCE(SUM(per.allocated_amount), 0)
-            FROM `tabPayment Entry Reference` per
-            INNER JOIN `tabPayment Entry` pe
+            SELECT COALESCE(SUM(pe.paid_amount), 0)
+            FROM `tabPayment Entry` pe
+            LEFT JOIN `tabPayment Entry Reference` per
                 ON pe.name = per.parent
             WHERE
-                per.reference_doctype = 'RAB Work Order'
-                AND per.reference_name = %s
-                AND pe.docstatus = 1
+                pe.docstatus = 1
+                AND (
+                    pe.work_order = %s
+                    OR (per.reference_doctype = 'RAB Work Order' AND per.reference_name = %s)
+                )
+                AND (pe.is_adhoc_advance = 1 OR pe.is_mobilization_advance = 1)
             """,
-            doc.name,
+            (doc.name, doc.name),
         )[0][0]
 
         outstanding = flt(doc.contract_value) - flt(already_paid)
