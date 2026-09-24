@@ -148,6 +148,10 @@ override_doctype_class = {
 doc_events = {
 	"Purchase Invoice": {
 		"validate": "ra_bill.api.purchase_invoice.sync_ra_bill_deductions"
+	},
+	"Payment Entry": {
+		"on_submit": "ra_bill.overrides.payment_entry.update_ra_bill_hold_qty_from_pe",
+		"on_cancel": "ra_bill.overrides.payment_entry.update_ra_bill_hold_qty_from_pe",
 	}
 }
 

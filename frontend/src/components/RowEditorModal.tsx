@@ -52,13 +52,17 @@ export function RowEditorModal({
 				updated.amount = Number(updated.qty || 0) * Number(updated.rate || 0);
 			}
 		} else {
-			if (field === "this_bill_qty" || field === "rate") {
+			if (field === "this_bill_qty" || field === "rate" || field === "reject_qty" || field === "hold_qty") {
 				const thisBillQty = Number(updated.this_bill_qty || 0);
+				const rejectQty = Number(updated.reject_qty || 0);
+				const approvedQty = Math.max(0, thisBillQty - rejectQty);
 				const rate = Number(updated.rate || 0);
 				const prevQty = Number(updated.previous_qty || 0);
-				updated.this_bill_amount = thisBillQty * rate;
-				updated.cumulative_qty = prevQty + thisBillQty;
+				updated.approved_qty = approvedQty;
+				updated.cumulative_qty = prevQty + approvedQty;
 				updated.current_qty = thisBillQty;
+				updated.this_bill_amount = approvedQty * rate;
+				updated.current_amount = approvedQty * rate;
 				updated.amount = updated.this_bill_amount;
 			}
 		}
@@ -284,12 +288,61 @@ export function RowEditorModal({
 								</div>
 
 								<div>
-									<label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-										Cumulative Qty (Auto-Sum)
+									<label className="block font-bold text-rose-600 dark:text-rose-400 mb-1.5">
+										Reject Qty
 									</label>
 									<input
 										type="number"
-										value={(Number(row.previous_qty || 0) + Number(row.this_bill_qty || 0))}
+										step="any"
+										value={row.reject_qty === 0 ? "" : (row.reject_qty ?? "")}
+										onChange={(e) => handleFieldChange("reject_qty", e.target.value === "" ? 0 : Number(e.target.value))}
+										placeholder="0"
+										className="w-full p-2.5 bg-white dark:bg-[#232333] border border-rose-300 dark:border-rose-500/40 rounded-xl font-mono font-bold text-rose-600 dark:text-rose-400 focus:outline-none focus:border-rose-500"
+									/>
+									{Number(row.reject_qty || 0) > Number(row.this_bill_qty || 0) && (
+										<p className="text-[10px] text-rose-500 font-bold mt-1">Cannot exceed This Bill Qty ({row.this_bill_qty || 0})</p>
+									)}
+								</div>
+							</div>
+
+							<div className="grid grid-cols-3 gap-3">
+								<div>
+									<label className="block font-bold text-emerald-600 dark:text-emerald-400 mb-1.5">
+										Approved Qty
+									</label>
+									<input
+										type="number"
+										value={Math.max(0, Number(row.this_bill_qty || 0) - Number(row.reject_qty || 0))}
+										readOnly
+										disabled
+										className="w-full p-2.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl font-mono font-bold text-emerald-600 dark:text-emerald-400 cursor-not-allowed"
+									/>
+								</div>
+
+								<div>
+									<label className="block font-bold text-amber-600 dark:text-amber-400 mb-1.5">
+										Hold Qty
+									</label>
+									<input
+										type="number"
+										step="any"
+										value={row.hold_qty === 0 ? "" : (row.hold_qty ?? "")}
+										onChange={(e) => handleFieldChange("hold_qty", e.target.value === "" ? 0 : Number(e.target.value))}
+										placeholder="0"
+										className="w-full p-2.5 bg-white dark:bg-[#232333] border border-amber-300 dark:border-amber-500/40 rounded-xl font-mono font-bold text-amber-600 dark:text-amber-400 focus:outline-none focus:border-amber-500"
+									/>
+									{Number(row.hold_qty || 0) > Math.max(0, Number(row.this_bill_qty || 0) - Number(row.reject_qty || 0)) && (
+										<p className="text-[10px] text-amber-500 font-bold mt-1">Cannot exceed Approved Qty ({Math.max(0, Number(row.this_bill_qty || 0) - Number(row.reject_qty || 0))})</p>
+									)}
+								</div>
+
+								<div>
+									<label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+										Cumulative Qty
+									</label>
+									<input
+										type="number"
+										value={(Number(row.previous_qty || 0) + Math.max(0, Number(row.this_bill_qty || 0) - Number(row.reject_qty || 0)))}
 										readOnly
 										disabled
 										className="w-full p-2.5 bg-slate-100 dark:bg-[#1e1e2d] border border-slate-200 dark:border-[#2d2d3f] rounded-xl font-mono text-slate-700 dark:text-slate-300 cursor-not-allowed opacity-90"
@@ -298,9 +351,12 @@ export function RowEditorModal({
 							</div>
 
 							<div className="p-3.5 bg-indigo-50 dark:bg-[#7367f0]/15 rounded-xl border border-indigo-200 dark:border-[#7367f0]/40 flex justify-between items-center">
-								<span className="font-bold text-indigo-700 dark:text-[#7367f0]">This Bill Amount (INR):</span>
+								<div>
+									<span className="font-bold text-indigo-700 dark:text-[#7367f0]">This Bill Amount (INR):</span>
+									<span className="text-[10px] text-slate-400 block">Approved Qty × Rate</span>
+								</div>
 								<span className="font-mono font-black text-indigo-900 dark:text-[#7367f0] text-sm">
-									₹ {(Number(row.this_bill_qty || 0) * Number(row.rate || 0)).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+									₹ {(Math.max(0, Number(row.this_bill_qty || 0) - Number(row.reject_qty || 0)) * Number(row.rate || 0)).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
 								</span>
 							</div>
 						</>

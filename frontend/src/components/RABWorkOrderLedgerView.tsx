@@ -13,6 +13,7 @@ import {
 	DollarSign,
 	AlertCircle,
 	CheckCircle2,
+	ShieldAlert,
 } from "lucide-react";
 
 interface RABWorkOrderLedgerViewProps {
@@ -220,6 +221,68 @@ export function RABWorkOrderLedgerView({
 		}
 		return map;
 	}, [reportData]);
+
+	// Fetch submitted RA Bills for the selected WO to compute aggregate hold/reject
+	const { data: rawRaBills } = useFrappeGetDocList("RA Bill", {
+		fields: [
+			"name",
+			"total_hold_value",
+			"original_total_hold_value",
+			"total_hold_qty",
+			"original_total_hold_qty",
+			"total_reject_value",
+			"total_reject_qty",
+		],
+		filters: [
+			["boq", "=", selectedWO || "__placeholder__"],
+			["docstatus", "=", 1],
+		],
+		limit: 0,
+	});
+
+	const aggHoldReject = useMemo(() => {
+		const bills = (rawRaBills || []) as Array<{
+			name: string;
+			total_hold_value?: number;
+			original_total_hold_value?: number;
+			total_hold_qty?: number;
+			original_total_hold_qty?: number;
+			total_reject_value?: number;
+			total_reject_qty?: number;
+		}>;
+		let origHoldVal = 0, pendingHoldVal = 0, origHoldQty = 0, pendingHoldQty = 0;
+		let rejectVal = 0, rejectQty = 0;
+
+		for (const b of bills) {
+			const bOrigHoldVal = Number(b.original_total_hold_value || b.total_hold_value || 0);
+			const bPendingHoldVal = Number(b.total_hold_value || 0);
+			const bOrigHoldQty = Number(b.original_total_hold_qty || b.total_hold_qty || 0);
+			const bPendingHoldQty = Number(b.total_hold_qty || 0);
+
+			origHoldVal += bOrigHoldVal;
+			pendingHoldVal += bPendingHoldVal;
+			origHoldQty += bOrigHoldQty;
+			pendingHoldQty += bPendingHoldQty;
+
+			rejectVal += Number(b.total_reject_value || 0);
+			rejectQty += Number(b.total_reject_qty || 0);
+		}
+
+		const paidHoldVal = Math.max(0, origHoldVal - pendingHoldVal);
+		const paidHoldQty = Math.max(0, origHoldQty - pendingHoldQty);
+
+		return {
+			origHoldValue: origHoldVal,
+			pendingHoldValue: pendingHoldVal,
+			paidHoldValue: paidHoldVal,
+			origHoldQty,
+			pendingHoldQty,
+			paidHoldQty,
+			rejectValue: rejectVal,
+			rejectQty,
+			billCount: bills.length,
+		};
+	}, [rawRaBills]);
 
 	// Navigation drill-down handler
 	const handleVoucherClick = (voucherNo: string, voucherType?: string) => {
@@ -584,7 +647,7 @@ export function RABWorkOrderLedgerView({
 						</h3>
 					</div>
 
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-xs">
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 text-xs">
 						{/* Card 1: Billing & Invoice */}
 						<div className="bg-slate-50/80 dark:bg-[#1e1e2d] p-4 rounded-xl border border-slate-200 dark:border-[#2d2d3f] space-y-2.5">
 							<div className="font-bold text-slate-800 dark:text-slate-200 pb-1.5 border-b border-slate-200 dark:border-[#32344d] flex items-center justify-between">
@@ -674,6 +737,54 @@ export function RABWorkOrderLedgerView({
 								</strong>
 							</div>
 						</div>
+
+						{/* Card 4: Hold & Reject Summary (aggregate across all submitted RA Bills) */}
+						{(aggHoldReject.origHoldValue > 0 || aggHoldReject.rejectValue > 0) && (
+							<div className="bg-slate-50/80 dark:bg-[#1e1e2d] p-4 rounded-xl border border-slate-200 dark:border-[#2d2d3f] space-y-2.5">
+								<div className="font-bold text-slate-800 dark:text-slate-200 pb-1.5 border-b border-slate-200 dark:border-[#32344d] flex items-center justify-between">
+									<span>Hold & Reject Summary</span>
+									<ShieldAlert size={15} className="text-amber-500" />
+								</div>
+								{aggHoldReject.origHoldValue > 0 && (
+									<div className="space-y-1.5">
+										<div className="flex justify-between items-center text-slate-600 dark:text-[#8f93a7]">
+											<span>Total Hold (Original):</span>
+											<span className="font-semibold text-slate-700 dark:text-slate-300 font-mono">
+												{formatCurrency(aggHoldReject.origHoldValue)} <span className="text-[11px] font-normal text-slate-400">({aggHoldReject.origHoldQty} units)</span>
+											</span>
+										</div>
+										<div className="flex justify-between items-center text-slate-600 dark:text-[#8f93a7]">
+											<span>Hold Paid:</span>
+											<span className="font-semibold text-emerald-600 dark:text-[#28c76f] font-mono">
+												{formatCurrency(aggHoldReject.paidHoldValue)} <span className="text-[11px] font-normal text-slate-400">({aggHoldReject.paidHoldQty} units)</span>
+											</span>
+										</div>
+										<div className="flex justify-between items-center text-slate-600 dark:text-[#8f93a7]">
+											<span>Hold Pending:</span>
+											<span className="font-semibold text-amber-600 dark:text-[#ff9f43] font-mono">
+												{formatCurrency(aggHoldReject.pendingHoldValue)} <span className="text-[11px] font-normal text-slate-400">({aggHoldReject.pendingHoldQty} units)</span>
+											</span>
+										</div>
+									</div>
+								)}
+								{aggHoldReject.rejectValue > 0 && (
+									<div className="flex justify-between items-center text-slate-600 dark:text-[#8f93a7] pt-1.5 border-t border-slate-200 dark:border-[#32344d]">
+										<span>Total Reject Value:</span>
+										<span className="font-semibold text-rose-600 dark:text-rose-400 font-mono">
+											{formatCurrency(aggHoldReject.rejectValue)} <span className="text-[11px] font-normal text-slate-400">({aggHoldReject.rejectQty} units)</span>
+										</span>
+									</div>
+								)}
+								<div className="flex justify-between items-center pt-2 border-t border-dashed border-slate-300 dark:border-[#32344d] text-[13px]">
+									<span className="font-semibold text-slate-700 dark:text-slate-300">
+										Across Bills:
+									</span>
+									<strong className="font-bold text-slate-900 dark:text-slate-100">
+										{aggHoldReject.billCount} submitted
+									</strong>
+								</div>
+							</div>
+						)}
 					</div>
 				</div>
 			)}

@@ -130,6 +130,22 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 	const [isAdditionsOpen, setIsAdditionsOpen] = useState(true);
 	const [isDeductionsOpen, setIsDeductionsOpen] = useState(true);
 
+	// PI outstanding — used to determine if Hold has been settled (Feature 1: "Paid" indicator)
+	const [piOutstanding, setPiOutstanding] = useState<number | null>(null);
+	useEffect(() => {
+		const piName = bill?.purchase_invoice || bill?.sales_invoice;
+		if (piName) {
+			fetch(`/api/resource/Purchase Invoice/${piName}?fields=["outstanding_amount"]`)
+				.then((r) => r.json())
+				.then((d) => setPiOutstanding(Number(d?.data?.outstanding_amount ?? -1)))
+				.catch(() => setPiOutstanding(null));
+		} else {
+			setPiOutstanding(null);
+		}
+	}, [bill?.purchase_invoice, bill?.sales_invoice]);
+	const isHoldPaid = piOutstanding !== null && piOutstanding <= 0.005;
+	const isDraft = bill ? bill.docstatus === 0 : true;
+
 	const lastLoadedDocRef = useRef<{ name: string; modified: string } | null>(null);
 
 	const fetchWorkflowDetails = async () => {
@@ -160,13 +176,20 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 
 				// Map from server field names to local state.
 				// Previous Qty: read-only from server
-				// This Bill Qty: the only field the user edits
-				// Cumulative Qty: previous_qty + this_bill_qty
+				// This Bill Qty: user-editable field
+				// Reject Qty: user-editable, defaults to 0
+				// Approved Qty: auto-computed (this_bill_qty - reject_qty)
+				// Hold Qty: user-editable subset of approved_qty
+				// Cumulative Qty: previous_qty + approved_qty
 				const mappedItems = (bill.items || []).map((it: any) => {
 					const rate = Number(it.rate || 0);
 					const prevQty = Number(it.previous_qty || 0);
 					const cumulativeQty = Number(it.cumulative_qty || 0);
 					const thisBillQty = Number(it.current_qty ?? (cumulativeQty - prevQty));
+					const rejectQty = Number(it.reject_qty || 0);
+					const approvedQty = Math.max(0, thisBillQty - rejectQty);
+					const holdQty = Number(it.hold_qty || 0);
+					const originalHoldQty = Number(it.original_hold_qty ?? (bill.docstatus === 0 ? holdQty : (it.hold_qty || 0)));
 					return {
 						...it,
 						item_code: it.item_code || "",
@@ -176,7 +199,11 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 						boq_qty: Number(it.boq_qty || 0),
 						previous_qty: prevQty,
 						this_bill_qty: thisBillQty,
-						cumulative_qty: prevQty + thisBillQty,
+						reject_qty: rejectQty,
+						approved_qty: approvedQty,
+						hold_qty: holdQty,
+						original_hold_qty: originalHoldQty,
+						cumulative_qty: prevQty + approvedQty,
 						current_qty: thisBillQty,
 					};
 				});
@@ -239,13 +266,49 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 
 	// Dynamic Live Financial Recalculations
 	const grossWorkValue = useMemo(() => {
-		// this_bill_qty is "this bill qty"; rate gives this bill amount
 		return items.reduce((acc, it) => {
 			const prevQty = Number(it.previous_qty || 0);
 			const thisBillQty = Number(it.this_bill_qty ?? (Number(it.cumulative_qty || 0) - prevQty));
-			return acc + (thisBillQty * Number(it.rate || 0));
+			const rejectQty = Number(it.reject_qty || 0);
+			const approvedQty = Math.max(0, thisBillQty - rejectQty);
+			return acc + (approvedQty * Number(it.rate || 0));
 		}, 0);
 	}, [items]);
+
+	const totalHoldValue = useMemo(() => {
+		return items.reduce((acc, it) => acc + (Number(it.hold_qty || 0) * Number(it.rate || 0)), 0);
+	}, [items]);
+
+	const totalRejectValue = useMemo(() => {
+		return items.reduce((acc, it) => acc + (Number(it.reject_qty || 0) * Number(it.rate || 0)), 0);
+	}, [items]);
+
+	const totalHoldQty = useMemo(() => {
+		return items.reduce((acc, it) => acc + Number(it.hold_qty || 0), 0);
+	}, [items]);
+
+	const totalRejectQty = useMemo(() => {
+		return items.reduce((acc, it) => acc + Number(it.reject_qty || 0), 0);
+	}, [items]);
+
+	const origHoldValue = useMemo(() => {
+		return items.reduce((acc, it) => {
+			const orig = isDraft ? Number(it.hold_qty || 0) : Number(it.original_hold_qty ?? (it.hold_qty || 0));
+			return acc + (orig * Number(it.rate || 0));
+		}, 0);
+	}, [items, isDraft]);
+
+	const origHoldQty = useMemo(() => {
+		return items.reduce((acc, it) => {
+			const orig = isDraft ? Number(it.hold_qty || 0) : Number(it.original_hold_qty ?? (it.hold_qty || 0));
+			return acc + orig;
+		}, 0);
+	}, [items, isDraft]);
+
+	const pendingHoldValue = totalHoldValue;
+	const pendingHoldQty = totalHoldQty;
+	const paidHoldValue = Math.max(0, origHoldValue - pendingHoldValue);
+	const paidHoldQty = Math.max(0, origHoldQty - pendingHoldQty);
 
 	const otherAdditionsTotal = useMemo(() => {
 		return additions.reduce((acc, a) => acc + Number(a.amount || 0), 0);
@@ -352,6 +415,18 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 		return totalInvoiceValue - totalDeductions;
 	}, [totalInvoiceValue, totalDeductions]);
 
+	const immediatelyPayable = useMemo(() => {
+		if (grossWorkValue > 0 && totalHoldValue > 0) {
+			const holdFraction = totalHoldValue / grossWorkValue;
+			return Math.max(0, netPayable * (1.0 - holdFraction));
+		}
+		return netPayable;
+	}, [grossWorkValue, totalHoldValue, netPayable]);
+
+	const deferredHold = useMemo(() => {
+		return Math.max(0, netPayable - immediatelyPayable);
+	}, [netPayable, immediatelyPayable]);
+
 	if (isLoading) {
 		return (
 			<div className="p-8 space-y-6 animate-pulse">
@@ -369,8 +444,6 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 			</div>
 		);
 	}
-
-	const isDraft = bill.docstatus === 0;
 
 	// ── CSV Download / Upload handlers for Measured Items ─────────────────────
 	const handleDownloadItemsCSV = () => {
@@ -505,24 +578,32 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 		const updated = [...items];
 		const row = { ...updated[index], [field]: value };
 
-		// This Bill Qty is the only field user directly edits.
-		// Immediately and correctly recalculate cumulative_qty = previous_qty + this_bill_qty
-		if (field === "this_bill_qty" || field === "rate") {
+		if (field === "this_bill_qty" || field === "rate" || field === "reject_qty" || field === "hold_qty") {
 			const prevQty = Number(row.previous_qty || 0);
 			const thisBillQty = Number(row.this_bill_qty || 0);
+			const rejectQty = Number(row.reject_qty || 0);
+			const approvedQty = Math.max(0, thisBillQty - rejectQty);
 			const rate = Number(row.rate || 0);
-			row.cumulative_qty = prevQty + thisBillQty;
+			if (field === "hold_qty" && isDraft) {
+				row.original_hold_qty = Number(value || 0);
+			}
+			row.approved_qty = approvedQty;
+			row.cumulative_qty = prevQty + approvedQty;
 			row.current_qty = thisBillQty;
-			row.this_bill_amount = thisBillQty * rate;
-			row.current_amount = thisBillQty * rate;
+			row.this_bill_amount = approvedQty * rate;
+			row.current_amount = approvedQty * rate;
 		} else if (field === "cumulative_qty") {
 			const prevQty = Number(row.previous_qty || 0);
 			const cumulativeQty = Number(row.cumulative_qty || 0);
 			const rate = Number(row.rate || 0);
-			row.this_bill_qty = cumulativeQty - prevQty;
-			row.current_qty = cumulativeQty - prevQty;
-			row.this_bill_amount = row.current_qty * rate;
-			row.current_amount = row.this_bill_amount;
+			const rejectQty = Number(row.reject_qty || 0);
+			const approvedQty = Math.max(0, cumulativeQty - prevQty);
+			const thisBillQty = approvedQty + rejectQty;
+			row.this_bill_qty = thisBillQty;
+			row.current_qty = thisBillQty;
+			row.approved_qty = approvedQty;
+			row.this_bill_amount = approvedQty * rate;
+			row.current_amount = approvedQty * rate;
 		}
 
 		updated[index] = row;
@@ -589,6 +670,49 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 
 	// Save & Submit Actions
 	const handleSaveDraft = async () => {
+		// Frontend hard validation on reject_qty and hold_qty (no silent clamping)
+		for (let i = 0; i < items.length; i++) {
+			const it = items[i];
+			const thisBillQty = Number(it.this_bill_qty ?? (Number(it.cumulative_qty || 0) - Number(it.previous_qty || 0)));
+			const rejectQty = Number(it.reject_qty || 0);
+			const approvedQty = Math.max(0, thisBillQty - rejectQty);
+			const holdQty = Number(it.hold_qty || 0);
+			const itemName = it.description || it.item_code || `Row #${i + 1}`;
+
+			if (rejectQty < 0) {
+				setFeedbackModal({
+					title: "Invalid Reject Quantity",
+					message: `Row #${i + 1} (${itemName}): Reject Quantity cannot be negative.`,
+					indicator: "red",
+				});
+				throw new Error(`Reject Quantity cannot be negative — Row #${i + 1}`);
+			}
+			if (rejectQty > thisBillQty) {
+				setFeedbackModal({
+					title: "Invalid Reject Quantity",
+					message: `Reject Quantity cannot exceed This Bill Quantity — Row #${i + 1} (${itemName}): Reject Qty (${rejectQty}) > This Bill Qty (${thisBillQty}).`,
+					indicator: "red",
+				});
+				throw new Error(`Reject Quantity cannot exceed This Bill Quantity — Row #${i + 1}`);
+			}
+			if (holdQty < 0) {
+				setFeedbackModal({
+					title: "Invalid Hold Quantity",
+					message: `Row #${i + 1} (${itemName}): Hold Quantity cannot be negative.`,
+					indicator: "red",
+				});
+				throw new Error(`Hold Quantity cannot be negative — Row #${i + 1}`);
+			}
+			if (holdQty > approvedQty) {
+				setFeedbackModal({
+					title: "Invalid Hold Quantity",
+					message: `Hold Quantity cannot exceed Approved Quantity — Row #${i + 1} (${itemName}): Hold Qty (${holdQty}) > Approved Qty (${approvedQty}).`,
+					indicator: "red",
+				});
+				throw new Error(`Hold Quantity cannot exceed Approved Quantity — Row #${i + 1}`);
+			}
+		}
+
 		const payload = {
 			posting_date: postingDate,
 			ra_bill_no: Number(raBillNo),
@@ -597,6 +721,12 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 			apply_gst: applyGst ? 1 : 0,
 			gst_percentage: Number(gstPercentage),
 			gross_work_value: grossWorkValue,
+			total_hold_value: totalHoldValue,
+			original_total_hold_value: isDraft ? totalHoldValue : (bill?.original_total_hold_value || totalHoldValue),
+			total_hold_qty: totalHoldQty,
+			original_total_hold_qty: isDraft ? totalHoldQty : (bill?.original_total_hold_qty || totalHoldQty),
+			total_reject_value: totalRejectValue,
+			total_reject_qty: totalRejectQty,
 			billable_value: billableValue,
 			gst_amount: gstAmount,
 			total_invoice_value: totalInvoiceValue,
@@ -606,7 +736,11 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 			items: items.map((it) => {
 				const prevQty = Number(it.previous_qty || 0);
 				const thisBillQty = Number(it.this_bill_qty ?? (Number(it.cumulative_qty || 0) - prevQty));
-				const cumulativeQty = prevQty + thisBillQty;
+				const rejectQty = Number(it.reject_qty || 0);
+				const approvedQty = Math.max(0, thisBillQty - rejectQty);
+				const holdQty = Number(it.hold_qty || 0);
+				const originalHoldQty = isDraft ? holdQty : Number(it.original_hold_qty ?? holdQty);
+				const cumulativeQty = prevQty + approvedQty;
 				return {
 					// Preserve the server-side child row name so Frappe updates (not re-inserts) each row
 					...(it.name ? { name: it.name } : {}),
@@ -616,9 +750,12 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 					uom: it.uom,
 					rate: Number(it.rate),
 					boq_qty: Number(it.boq_qty || 0),
-					// previous_qty is read-only (set by server from previous RA Bill)
 					previous_qty: prevQty,
-					// cumulative_qty is accurately calculated: previous_qty + this_bill_qty
+					current_qty: thisBillQty,
+					reject_qty: rejectQty,
+					approved_qty: approvedQty,
+					hold_qty: holdQty,
+					original_hold_qty: originalHoldQty,
 					cumulative_qty: cumulativeQty,
 				};
 			}),
@@ -930,6 +1067,43 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 					<p className="text-base font-extrabold text-rose-700 dark:text-[#ea5455] mt-1">{formatCurrency(advancePending)}</p>
 					<p className="text-[9px] text-slate-400 dark:text-[#8f93a7] mt-0.5">= Disbursed − Recovered</p>
 				</div>
+
+				{/* Hold Qty / Value */}
+				{origHoldValue > 0 && (
+					<div className={`p-4 rounded-2xl border shadow-sm ${pendingHoldValue <= 0.005 || isHoldPaid ? "bg-emerald-500/10 border-emerald-500/30" : "bg-amber-500/10 border-amber-500/30"}`}>
+						<div className="flex items-center justify-between pb-1 border-b border-slate-200/60 dark:border-[#32344d]">
+							<p className="text-[9px] font-bold uppercase tracking-wider text-amber-500">Hold Qty / Value</p>
+							{pendingHoldValue <= 0.005 || isHoldPaid ? (
+								<span className="text-[10px] font-extrabold text-emerald-600 dark:text-[#28c76f]">✓ Paid</span>
+							) : paidHoldValue > 0.005 ? (
+								<span className="text-[10px] font-bold text-amber-600 dark:text-[#ff9f43]">Partially Paid</span>
+							) : null}
+						</div>
+						<div className="mt-2 space-y-1.5">
+							<div className="flex items-baseline justify-between text-xs">
+								<span className="text-slate-500 dark:text-[#8f93a7]">Hold Paid:</span>
+								<span className="font-extrabold text-emerald-600 dark:text-[#28c76f] font-mono">
+									{formatCurrency(paidHoldValue)} <span className="text-[10px] font-normal text-slate-400">({paidHoldQty} units)</span>
+								</span>
+							</div>
+							<div className="flex items-baseline justify-between text-xs">
+								<span className="text-slate-500 dark:text-[#8f93a7]">Hold Pending:</span>
+								<span className="font-extrabold text-amber-600 dark:text-[#ff9f43] font-mono">
+									{formatCurrency(pendingHoldValue)} <span className="text-[10px] font-normal text-slate-400">({pendingHoldQty} units)</span>
+								</span>
+							</div>
+						</div>
+					</div>
+				)}
+
+				{/* Reject Qty / Value */}
+				{totalRejectValue > 0 && (
+					<div className="bg-rose-500/10 p-4 rounded-2xl border border-rose-500/30 shadow-sm">
+						<p className="text-[9px] font-bold uppercase tracking-wider text-rose-500">Reject Qty / Value</p>
+						<p className="text-base font-extrabold text-rose-600 dark:text-[#ea5455] mt-1">{formatCurrency(totalRejectValue)}</p>
+						<p className="text-[9px] text-slate-400 dark:text-[#8f93a7] mt-0.5">{totalRejectQty} units rejected</p>
+					</div>
+				)}
 			</div>
 
 			{/* 2. PRIMARY DETAILS (Editable Inputs) */}
@@ -1069,6 +1243,9 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 								<th className="p-3.5 text-right">Rate (INR)</th>
 								<th className="p-3.5 text-right">Previous Qty</th>
 								<th className="p-3.5 text-right">This Bill Qty *</th>
+								<th className="p-3.5 text-right text-rose-600 dark:text-rose-400">Reject Qty</th>
+								<th className="p-3.5 text-right text-emerald-600 dark:text-emerald-400">Approved Qty</th>
+								<th className="p-3.5 text-right text-amber-600 dark:text-amber-400">Hold Qty</th>
 								<th className="p-3.5 text-right">Cumulative Qty</th>
 								<th className="p-3.5 text-right">This Bill Amount</th>
 								<th className="p-3.5 text-center">Row Editor</th>
@@ -1078,6 +1255,19 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 							{items && items.length > 0 ? (
 								items.map((it: any, idx: number) => {
 									const isRowEditing = editingRowIndex === idx;
+									const thisBillQty = Number(it.this_bill_qty ?? (Number(it.cumulative_qty || 0) - Number(it.previous_qty || 0)));
+									const rejectQty = Number(it.reject_qty || 0);
+									const approvedQty = Math.max(0, thisBillQty - rejectQty);
+									const holdQty = Number(it.hold_qty || 0);
+									const origHoldQty = Number(it.original_hold_qty ?? (isDraft ? holdQty : (it.hold_qty || 0)));
+									const hadHold = origHoldQty > 0;
+									const isRowFullyPaid = hadHold && (holdQty <= 0.0001 || isHoldPaid);
+									const isRowPartiallyPaid = hadHold && holdQty > 0.0001 && holdQty < origHoldQty;
+									const prevQty = Number(it.previous_qty || 0);
+									const cumulativeQty = prevQty + approvedQty;
+									const rate = Number(it.rate || 0);
+									const billAmount = approvedQty * rate;
+
 									return (
 										<React.Fragment key={idx}>
 											<tr className="hover:bg-slate-50/80 dark:hover:bg-[#1e1e2d]/70 transition">
@@ -1110,9 +1300,9 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 														<span className="font-mono font-medium">{formatCurrency(it.rate)}</span>
 													)}
 												</td>
-												<td className="p-3.5 text-right text-slate-400 font-mono">{it.previous_qty || 0}</td>
+												<td className="p-3.5 text-right text-slate-400 font-mono">{prevQty}</td>
 												
-												{/* This Bill Qty — the ONLY user-editable field */}
+												{/* This Bill Qty */}
 												<td className="p-3.5 text-right">
 													{isDraft ? (
 														<input
@@ -1120,24 +1310,82 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 															step="any"
 															value={it.this_bill_qty === 0 ? "" : (it.this_bill_qty ?? "")}
 															onChange={(e) => handleItemChange(idx, "this_bill_qty", e.target.value === "" ? 0 : Number(e.target.value))}
-															className="w-28 p-1.5 bg-white dark:bg-[#1e1e2d] border-2 border-indigo-500/60 dark:border-[#7367f0] rounded-lg font-mono font-bold text-right text-indigo-600 dark:text-[#7367f0] focus:outline-none"
+															className="w-24 p-1.5 bg-white dark:bg-[#1e1e2d] border-2 border-indigo-500/60 dark:border-[#7367f0] rounded-lg font-mono font-bold text-right text-indigo-600 dark:text-[#7367f0] focus:outline-none"
 															placeholder="0"
 														/>
 													) : (
 														<span className="font-mono font-bold text-indigo-600 dark:text-[#7367f0]">
-															{it.this_bill_qty ?? (Number(it.cumulative_qty || 0) - Number(it.previous_qty || 0))}
+															{thisBillQty}
 														</span>
 													)}
 												</td>
 
-												{/* Cumulative Qty — auto-calculated and strictly READ-ONLY */}
-												<td className="p-3.5 text-right font-mono font-bold text-slate-700 dark:text-slate-300">
-													{Number(it.previous_qty || 0) + Number(it.this_bill_qty ?? (Number(it.cumulative_qty || 0) - Number(it.previous_qty || 0)))}
+												{/* Reject Qty */}
+												<td className="p-3.5 text-right">
+													{isDraft ? (
+														<input
+															type="number"
+															step="any"
+															value={it.reject_qty === 0 ? "" : (it.reject_qty ?? "")}
+															onChange={(e) => handleItemChange(idx, "reject_qty", e.target.value === "" ? 0 : Number(e.target.value))}
+															className="w-20 p-1.5 bg-white dark:bg-[#1e1e2d] border border-rose-300 dark:border-rose-500/40 rounded-lg font-mono font-bold text-right text-rose-600 dark:text-rose-400 focus:outline-none"
+															placeholder="0"
+														/>
+													) : (
+														<span className="font-mono font-semibold text-rose-600 dark:text-rose-400">
+															{rejectQty}
+														</span>
+													)}
 												</td>
 
-												{/* This Bill Amount = this_bill_qty × rate */}
+												{/* Approved Qty (Read-Only: This Bill - Reject) */}
+												<td className="p-3.5 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+													{approvedQty}
+												</td>
+
+												{/* Hold Qty */}
+												<td className="p-3.5 text-right">
+													{isDraft ? (
+														<input
+															type="number"
+															step="any"
+															value={it.hold_qty === 0 ? "" : (it.hold_qty ?? "")}
+															onChange={(e) => handleItemChange(idx, "hold_qty", e.target.value === "" ? 0 : Number(e.target.value))}
+															className="w-20 p-1.5 bg-white dark:bg-[#1e1e2d] border border-amber-300 dark:border-amber-500/40 rounded-lg font-mono font-bold text-right text-amber-600 dark:text-amber-400 focus:outline-none"
+															placeholder="0"
+														/>
+													) : (
+														<div>
+															{hadHold && isRowFullyPaid ? (
+																<span className="inline-block text-[11px] font-extrabold text-emerald-600 dark:text-[#28c76f]">
+																	✓ Paid
+																</span>
+															) : hadHold && isRowPartiallyPaid ? (
+																<div>
+																	<span className="font-mono font-semibold text-amber-600 dark:text-amber-400">
+																		{holdQty}
+																	</span>
+																	<span className="block text-[9px] font-bold text-amber-500 dark:text-[#ff9f43] mt-0.5">
+																		{holdQty} pending
+																	</span>
+																</div>
+															) : (
+																<span className="font-mono font-semibold text-amber-600 dark:text-amber-400">
+																	{holdQty}
+																</span>
+															)}
+														</div>
+													)}
+												</td>
+
+												{/* Cumulative Qty — auto-calculated (Previous + Approved) */}
+												<td className="p-3.5 text-right font-mono font-bold text-slate-700 dark:text-slate-300">
+													{cumulativeQty}
+												</td>
+
+												{/* This Bill Amount = approved_qty × rate */}
 												<td className="p-3.5 text-right font-mono font-bold text-indigo-600 dark:text-[#7367f0]">
-													{formatCurrency(Number(it.this_bill_qty ?? (Number(it.cumulative_qty || 0) - Number(it.previous_qty || 0))) * Number(it.rate || 0))}
+													{formatCurrency(billAmount)}
 												</td>
 
 												<td className="p-3.5 text-center">
@@ -1155,7 +1403,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 											{/* Standard ERPNext Child Table Inline Row Editor ("Editing Row #X") */}
 											{isRowEditing && (
 												<tr>
-													<td colSpan={10} className="p-0 border-b-2 border-indigo-500">
+													<td colSpan={13} className="p-0 border-b-2 border-indigo-500">
 														<RowEditorModal
 															rowIndex={idx}
 															totalRows={items.length}
@@ -1180,7 +1428,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 								})
 							) : (
 								<tr>
-									<td colSpan={10} className="p-8 text-center text-slate-400">
+									<td colSpan={13} className="p-8 text-center text-slate-400">
 										No measured items attached. Click "+ Add Item Row" to add items.
 									</td>
 								</tr>
@@ -1200,6 +1448,18 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 							<span className="text-slate-600 dark:text-[#8f93a7]">Gross Work Value (This Bill):</span>
 							<span className="font-mono font-bold text-slate-900 dark:text-slate-100 text-sm">{formatCurrency(grossWorkValue)}</span>
 						</div>
+						{totalHoldValue > 0 && (
+							<div className="flex justify-between items-center border-b border-slate-200 dark:border-[#2d2d3f] pb-2 text-amber-600 dark:text-amber-400">
+								<span className="font-semibold">Hold Value (Payment Deferred):</span>
+								<span className="font-mono font-bold">{formatCurrency(totalHoldValue)}</span>
+							</div>
+						)}
+						{totalRejectValue > 0 && (
+							<div className="flex justify-between items-center border-b border-slate-200 dark:border-[#2d2d3f] pb-2 text-rose-600 dark:text-rose-400">
+								<span className="font-semibold">Reject Value (Disallowed):</span>
+								<span className="font-mono font-bold">{formatCurrency(totalRejectValue)}</span>
+							</div>
+						)}
 						<div className="flex justify-between items-center border-b border-slate-200 dark:border-[#2d2d3f] pb-2">
 							<span className="text-slate-600 dark:text-[#8f93a7]">Other Additions Total:</span>
 							<span className="font-mono font-semibold text-slate-800 dark:text-slate-200">{formatCurrency(otherAdditionsTotal)}</span>
@@ -1360,6 +1620,18 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 								<span className="font-bold text-slate-800 dark:text-slate-200">Net Payable Amount:</span>
 								<span className="font-mono font-black text-indigo-600 dark:text-[#7367f0] text-base">{formatCurrency(netPayable)}</span>
 							</div>
+							{totalHoldValue > 0 && (
+								<div className="space-y-1.5 pt-2.5 border-t border-slate-200 dark:border-[#32344d] text-xs">
+									<div className="flex justify-between text-emerald-600 dark:text-[#28c76f] font-semibold">
+										<span>Immediately Payable:</span>
+										<span className="font-mono font-bold">{formatCurrency(immediatelyPayable)}</span>
+									</div>
+									<div className="flex justify-between text-amber-600 dark:text-amber-400 font-semibold">
+										<span>Deferred (Hold Portion):</span>
+										<span className="font-mono font-bold">{formatCurrency(deferredHold)}</span>
+									</div>
+								</div>
+							)}
 							{/* Running Advance Recovery note */}
 							{totalAdvancesDisbursed > 0 && (
 								<div className="mt-3 pt-3 border-t border-dashed border-slate-300 dark:border-[#32344d] space-y-1.5 text-[10px]">

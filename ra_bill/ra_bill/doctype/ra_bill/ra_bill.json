@@ -2,7 +2,7 @@
  "actions": [],
  "allow_import": 1,
  "autoname": "naming_series:",
- "creation": "2026-06-15 00:00:00",
+ "creation": "2026-09-19 10:39:08.536441",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -39,6 +39,12 @@
   "additions_total",
   "value_section",
   "gross_work_value",
+  "total_hold_value",
+  "original_total_hold_value",
+  "total_hold_qty",
+  "original_total_hold_qty",
+  "total_reject_value",
+  "total_reject_qty",
   "previous_billed_value",
   "cumulative_work_value",
   "billable_value",
@@ -295,6 +301,49 @@
    "read_only": 1
   },
   {
+   "fieldname": "total_hold_value",
+   "fieldtype": "Currency",
+   "label": "Hold Value (This Bill)",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "original_total_hold_value",
+   "fieldtype": "Currency",
+   "label": "Original Hold Value",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "total_hold_qty",
+   "fieldtype": "Float",
+   "label": "Total Hold Qty",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "original_total_hold_qty",
+   "fieldtype": "Float",
+   "label": "Original Total Hold Qty",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_reject_value",
+   "fieldtype": "Currency",
+   "label": "Reject Value (This Bill)",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "total_reject_qty",
+   "fieldtype": "Float",
+   "label": "Total Reject Qty",
+   "read_only": 1
+  },
+  {
    "fieldname": "previous_billed_value",
    "fieldtype": "Currency",
    "label": "Previous Billed Value",
@@ -501,7 +550,7 @@
    "link_fieldname": "ra_bill"
   }
  ],
- "modified": "2026-08-22 16:28:03.681281",
+ "modified": "2026-09-23 15:03:09.101658",
  "modified_by": "Administrator",
  "module": "RA Bill",
  "name": "RA Bill",
