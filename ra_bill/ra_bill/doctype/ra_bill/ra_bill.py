@@ -41,6 +41,13 @@ class RABill(Document):
 				row.method = getattr(row, "calculation_method", None) or "Percentage"
 
 
+	def before_submit(self):
+		for r in self.items:
+			if not getattr(r, "original_hold_qty", None) and getattr(r, "hold_qty", None):
+				r.original_hold_qty = flt(r.hold_qty)
+		self.original_total_hold_qty = sum(flt(getattr(r, "original_hold_qty", 0) if flt(getattr(r, "original_hold_qty", 0)) > 0 else getattr(r, "hold_qty", 0)) for r in self.items)
+		self.original_total_hold_value = sum(flt(getattr(r, "original_hold_qty", 0) if flt(getattr(r, "original_hold_qty", 0)) > 0 else getattr(r, "hold_qty", 0)) * flt(r.rate) for r in self.items)
+
 	def on_submit(self):
 		self.update_project_balances(cancel=False)
 		frappe.db.set_value(WORK_ORDER, self.boq, "status", "Active")
@@ -53,10 +60,13 @@ class RABill(Document):
 		self.mark_measurement_books(linked=False)
 
 	def _work_order(self):
-		"""Cached Work Order doc for this bill."""
-		if not getattr(self, "_wo_doc", None) and self.boq:
-			self._wo_doc = frappe.get_cached_doc(WORK_ORDER, self.boq)
-		return getattr(self, "_wo_doc", None)
+		"""Work Order doc for this bill."""
+		if not self.boq:
+			return None
+		wo = getattr(self, "_wo_doc", None)
+		if not wo or getattr(wo, "name", None) != self.boq:
+			self._wo_doc = frappe.get_doc(WORK_ORDER, self.boq)
+		return self._wo_doc
 
 	def set_defaults_from_work_order(self):
 		if not self.boq:
@@ -193,7 +203,14 @@ class RABill(Document):
 			prev_doc = frappe.get_doc("RA Bill", self.previous_ra_bill)
 			for row in prev_doc.items:
 				key = row.boq_item or row.description
-				prev_qty[key] = flt(row.cumulative_qty)
+				appr = getattr(row, "approved_qty", None)
+				if appr is not None:
+					c_qty = flt(row.previous_qty) + flt(row.approved_qty)
+				elif flt(getattr(row, "reject_qty", 0)) > 0:
+					c_qty = flt(row.previous_qty) + max(0.0, flt(row.current_qty) - flt(row.reject_qty))
+				else:
+					c_qty = flt(row.cumulative_qty)
+				prev_qty[key] = c_qty
 				prev_pct[key] = flt(row.cumulative_percent)
 		for row in self.items:
 			key = row.boq_item or row.description
@@ -228,31 +245,40 @@ class RABill(Document):
 		prev_pct_map = {}
 		for r in prev_doc.items:
 			key = r.boq_item or r.description
-			prev_qty_map[key] = flt(r.cumulative_qty)
+			appr = getattr(r, "approved_qty", None)
+			if appr is not None:
+				c_qty = flt(r.previous_qty) + flt(r.approved_qty)
+			elif flt(getattr(r, "reject_qty", 0)) > 0:
+				c_qty = flt(r.previous_qty) + max(0.0, flt(r.current_qty) - flt(r.reject_qty))
+			else:
+				c_qty = flt(r.cumulative_qty)
+			prev_qty_map[key] = c_qty
 			prev_pct_map[key] = flt(r.cumulative_percent)
 
 		billing_method = self.billing_method or wo.billing_method or "Item Rate (Measured)"
 		measured = billing_method == "Item Rate (Measured)"
+		tol = self._deviation_tolerance()
 
 		all_completed = True
 		for item in wo.items:
 			key = item.name or item.description
+			limit = flt(item.boq_qty) * (1.0 + tol / 100.0)
 			if measured:
 				p_qty = prev_qty_map.get(key, 0.0)
-				b_qty = flt(item.boq_qty)
-				if b_qty > 0 and p_qty < b_qty:
+				if limit > 0 and p_qty < (limit - 1e-6):
 					all_completed = False
 					break
 			else:
 				p_pct = prev_pct_map.get(key, 0.0)
-				if p_pct < 100.0:
+				pct_limit = 100.0 * (1.0 + tol / 100.0)
+				if p_pct < (pct_limit - 1e-6):
 					all_completed = False
 					break
 
-		contract_val = flt(wo.contract_value) or flt(wo.total_boq_amount)
+		contract_val = (flt(wo.contract_value) or flt(wo.total_boq_amount)) * (1.0 + tol / 100.0)
 		prev_work_val = flt(prev_doc.cumulative_work_value)
 
-		if (wo.items and all_completed) or (contract_val > 0 and prev_work_val >= contract_val):
+		if (wo.items and all_completed) or (contract_val > 0 and prev_work_val >= (contract_val - 1e-6)):
 			frappe.throw(
 				_("This Work Order {0} has already been fully billed. No further RA Bills can be created.").format(
 					self.boq
@@ -272,8 +298,47 @@ class RABill(Document):
 		for row in self.items:
 			row.contract_amount = flt(row.boq_qty) * flt(row.rate)
 			if measured:
-				row.current_qty = flt(row.cumulative_qty) - flt(row.previous_qty)
-				row.current_amount = flt(row.current_qty) * flt(row.rate)
+				if row.current_qty is not None and row.current_qty != "":
+					row.current_qty = flt(row.current_qty)
+				else:
+					row.current_qty = flt(row.cumulative_qty) - flt(row.previous_qty)
+
+				item_label = getattr(row, "item_name", None) or row.description or row.item_code or _("Row #{0}").format(row.idx)
+				row.reject_qty = flt(getattr(row, "reject_qty", 0))
+				row.hold_qty = flt(getattr(row, "hold_qty", 0))
+
+				if row.reject_qty < 0:
+					frappe.throw(
+						_("Row #{0} ({1}): Reject Quantity cannot be negative.").format(row.idx, item_label),
+						title=_("Invalid Reject Quantity"),
+					)
+				if row.reject_qty > row.current_qty:
+					frappe.throw(
+						_(
+							"Reject Quantity cannot exceed This Bill Quantity — Row #{0} ({1}): "
+							"Reject Qty ({2}) > This Bill Qty ({3})."
+						).format(row.idx, item_label, row.reject_qty, row.current_qty),
+						title=_("Invalid Reject Quantity"),
+					)
+
+				row.approved_qty = max(0.0, flt(row.current_qty) - flt(row.reject_qty))
+
+				if row.hold_qty < 0:
+					frappe.throw(
+						_("Row #{0} ({1}): Hold Quantity cannot be negative.").format(row.idx, item_label),
+						title=_("Invalid Hold Quantity"),
+					)
+				if row.hold_qty > row.approved_qty:
+					frappe.throw(
+						_(
+							"Hold Quantity cannot exceed Approved Quantity — Row #{0} ({1}): "
+							"Hold Qty ({2}) > Approved Qty ({3})."
+						).format(row.idx, item_label, row.hold_qty, row.approved_qty),
+						title=_("Invalid Hold Quantity"),
+					)
+
+				row.cumulative_qty = flt(row.previous_qty) + flt(row.approved_qty)
+				row.current_amount = flt(row.approved_qty) * flt(row.rate)
 				row.previous_amount = flt(row.previous_qty) * flt(row.rate)
 				row.cumulative_amount = flt(row.cumulative_qty) * flt(row.rate)
 				row.deviation_qty = flt(row.cumulative_qty) - flt(row.boq_qty)
@@ -290,6 +355,11 @@ class RABill(Document):
 				row.deviation_qty = 0.0
 
 	def _deviation_tolerance(self):
+		if not self.boq:
+			return 0.0
+		val = frappe.db.get_value(WORK_ORDER, self.boq, "deviation_tolerance_percentage")
+		if val is not None:
+			return flt(val)
 		wo = self._work_order()
 		return flt(wo.deviation_tolerance_percentage) if wo else 0.0
 
@@ -300,17 +370,30 @@ class RABill(Document):
 		limit = flt(row.boq_qty) * (1.0 + tol / 100.0)
 		if flt(row.cumulative_qty) > (limit + 1e-6):
 			item_name = row.item_code or row.description or _("Row #{0}").format(row.idx)
+			disp_limit = round(limit, 4)
+			if disp_limit == int(disp_limit):
+				disp_limit = int(disp_limit)
+			disp_cum = round(flt(row.cumulative_qty), 4)
+			if disp_cum == int(disp_cum):
+				disp_cum = int(disp_cum)
+			disp_boq = round(flt(row.boq_qty), 4)
+			if disp_boq == int(disp_boq):
+				disp_boq = int(disp_boq)
+			disp_tol = round(tol, 2)
+			if disp_tol == int(disp_tol):
+				disp_tol = int(disp_tol)
+
 			if tol > 0:
 				msg = _(
 					"Row #{0} ({1}): Cumulative quantity {2} exceeds the Work Order contracted quantity of {3} "
 					"(allowed limit with {4}% deviation tolerance is {5}). "
 					"A Variation Order is required to proceed beyond this limit."
-				).format(row.idx, item_name, flt(row.cumulative_qty), flt(row.boq_qty), tol, limit)
+				).format(row.idx, item_name, disp_cum, disp_boq, disp_tol, disp_limit)
 			else:
 				msg = _(
 					"Row #{0} ({1}): Cumulative quantity {2} exceeds the Work Order contracted quantity of {3}. "
 					"A Variation Order is required to proceed beyond this limit."
-				).format(row.idx, item_name, flt(row.cumulative_qty), flt(row.boq_qty))
+				).format(row.idx, item_name, disp_cum, disp_boq)
 			frappe.throw(msg, title=_("Quantity Exceeds Work Order Limit"))
 
 	def calculate_child_lines(self):
@@ -332,6 +415,18 @@ class RABill(Document):
 
 	def calculate_totals(self):
 		self.gross_work_value = sum(flt(r.current_amount) for r in self.items)
+
+		if self.docstatus == 0:
+			for r in self.items:
+				r.original_hold_qty = flt(getattr(r, "hold_qty", 0))
+
+		self.total_hold_value = sum(flt(getattr(r, "hold_qty", 0)) * flt(r.rate) for r in self.items)
+		self.total_hold_qty = sum(flt(getattr(r, "hold_qty", 0)) for r in self.items)
+		self.original_total_hold_qty = sum(flt(getattr(r, "original_hold_qty", 0) if flt(getattr(r, "original_hold_qty", 0)) > 0 else getattr(r, "hold_qty", 0)) for r in self.items)
+		self.original_total_hold_value = sum(flt(getattr(r, "original_hold_qty", 0) if flt(getattr(r, "original_hold_qty", 0)) > 0 else getattr(r, "hold_qty", 0)) * flt(r.rate) for r in self.items)
+
+		self.total_reject_value = sum(flt(getattr(r, "reject_qty", 0)) * flt(r.rate) for r in self.items)
+		self.total_reject_qty = sum(flt(getattr(r, "reject_qty", 0)) for r in self.items)
 		self.previous_billed_value = sum(flt(r.previous_amount) for r in self.items)
 		self.cumulative_work_value = flt(self.gross_work_value) + flt(self.previous_billed_value)
 
@@ -682,7 +777,8 @@ class RABill(Document):
 		lines = []
 		default_item = None
 		for row in self.items:
-			if not flt(row.current_qty):
+			qty_to_invoice = flt(getattr(row, "approved_qty", None) if getattr(row, "approved_qty", None) is not None else row.current_qty)
+			if not qty_to_invoice:
 				continue
 			item_code = row.item_code
 			if not item_code:
@@ -693,7 +789,7 @@ class RABill(Document):
 					"item_code": item_code,
 					"item_name": (row.description or "")[:140],
 					"description": row.description,
-					"qty": flt(row.current_qty),
+					"qty": qty_to_invoice,
 					"uom": row.uom,
 					"rate": flt(row.rate),
 					"cost_center": self.cost_center,
@@ -724,11 +820,18 @@ def get_boq_items(boq, previous_ra_bill=None):
 	if previous_ra_bill:
 		prev_doc = frappe.get_doc("RA Bill", previous_ra_bill)
 		for r in prev_doc.items:
+			appr = getattr(r, "approved_qty", None)
+			if appr is not None:
+				c_qty = flt(r.previous_qty) + flt(r.approved_qty)
+			elif flt(getattr(r, "reject_qty", 0)) > 0:
+				c_qty = flt(r.previous_qty) + max(0.0, flt(r.current_qty) - flt(r.reject_qty))
+			else:
+				c_qty = flt(r.cumulative_qty)
 			if r.boq_item:
-				prev_map[r.boq_item] = flt(r.cumulative_qty)
+				prev_map[r.boq_item] = c_qty
 				prev_pct[r.boq_item] = flt(r.cumulative_percent)
 			if r.description:
-				prev_map[r.description] = flt(r.cumulative_qty)
+				prev_map[r.description] = c_qty
 				prev_pct[r.description] = flt(r.cumulative_percent)
 
 	rows = []

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useFrappeGetDoc } from "frappe-react-sdk";
 import {
 	ArrowLeft,
@@ -11,6 +11,7 @@ import {
 	ChevronDown,
 	X,
 	ExternalLink,
+	Send,
 } from "lucide-react";
 
 const formatCurrency = (amount: number | undefined | null, currency = "INR") => {
@@ -23,7 +24,7 @@ const formatCurrency = (amount: number | undefined | null, currency = "INR") => 
 	}).format(Math.abs(amount));
 	return isNegative ? `- ${formatted}` : formatted;
 };
-import { callFrappeMethod } from "../utils/frappeErrors";
+import { callFrappeMethod, parseFrappeError } from "../utils/frappeErrors";
 
 interface PaymentEntryDetailProps {
 	paymentId?: string;
@@ -41,7 +42,7 @@ export function PaymentEntryDetail({
 	onSelectWO,
 }: PaymentEntryDetailProps) {
 	const targetId = paymentEntryId || paymentId || "";
-	const { data: doc, isLoading } = useFrappeGetDoc("Payment Entry", targetId);
+	const { data: doc, isLoading, mutate } = useFrappeGetDoc("Payment Entry", targetId);
 
 	// Collapsible sections
 	const [isConnectionsOpen, setIsConnectionsOpen] = useState(true);
@@ -54,6 +55,25 @@ export function PaymentEntryDetail({
 	const [isLedgerOpen, setIsLedgerOpen] = useState(false);
 	const [glEntries, setGlEntries] = useState<any[]>([]);
 	const [isLoadingGL, setIsLoadingGL] = useState(false);
+	const [isSubmitting, setIsSubmitting] = useState(false);
+
+	// Submit handler — same pattern as RA Bill / Purchase Invoice submit buttons
+	const handleSubmitPE = useCallback(async () => {
+		if (isSubmitting || !doc || doc.docstatus !== 0) return;
+		setIsSubmitting(true);
+		try {
+			await callFrappeMethod("ra_bill.api.submit_document", {
+				doctype: "Payment Entry",
+				name: doc.name,
+			});
+			mutate();
+		} catch (err: any) {
+			const parsed = parseFrappeError(err, "Submit Payment Entry Failed");
+			alert(parsed.message);
+		} finally {
+			setIsSubmitting(false);
+		}
+	}, [isSubmitting, doc, mutate]);
 
 	// Fetch GL Entries when Ledger modal opens
 	useEffect(() => {
@@ -147,6 +167,18 @@ export function PaymentEntryDetail({
 
 				{/* Right Action Buttons */}
 				<div className="flex flex-wrap items-center gap-2 text-xs">
+					{/* Submit Button — visible only for Draft PEs */}
+					{doc.docstatus === 0 && (
+						<button
+							onClick={handleSubmitPE}
+							disabled={isSubmitting}
+							className="px-5 py-2 bg-emerald-600 dark:bg-emerald-600 hover:bg-emerald-700 dark:hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-md transition flex items-center gap-1.5 disabled:opacity-60"
+						>
+							<Send size={15} />
+							<span>{isSubmitting ? "Submitting…" : "Submit"}</span>
+						</button>
+					)}
+
 					{/* Ledger Button */}
 					<button
 						onClick={() => setIsLedgerOpen(true)}

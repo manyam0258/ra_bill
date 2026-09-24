@@ -63,7 +63,6 @@ class CustomPaymentEntry(PaymentEntry):
                 "Purchase Invoice",
                 "Journal Entry",
                 "Payment Entry",
-                "RAB Work Order",
             )
 
     def set_missing_values(self):
@@ -104,6 +103,13 @@ class CustomPaymentEntry(PaymentEntry):
             return True
         if (
             self.payment_type == "Pay"
+            and getattr(self, "work_order", None)
+            and not any(r.reference_doctype == "Purchase Invoice" for r in self.references)
+            and not cint(getattr(self, "is_mobilization_advance", 0))
+        ):
+            return True
+        if (
+            self.payment_type == "Pay"
             and any(r.reference_doctype == "RAB Work Order" for r in self.references)
             and not any(r.reference_doctype == "Purchase Invoice" for r in self.references)
             and not cint(getattr(self, "is_mobilization_advance", 0))
@@ -134,27 +140,24 @@ class CustomPaymentEntry(PaymentEntry):
                 ra_bill = frappe.get_doc("RA Bill", ra_bill_name)
                 has_ra_bill_pi = True
 
-                # Automatically set top-level Work Order field and append RAB Work Order reference row if missing
-                if ra_bill.boq:
-                    if not self.work_order:
-                        self.work_order = ra_bill.boq
+                # Automatically set top-level Work Order field
+                if ra_bill.boq and not self.work_order:
+                    self.work_order = ra_bill.boq
 
-                    has_wo_ref = any(
-                        r.reference_doctype == "RAB Work Order" and r.reference_name == ra_bill.boq
-                        for r in self.references
-                    )
-                    if not has_wo_ref:
-                        wo = frappe.get_doc("RAB Work Order", ra_bill.boq)
-                        self.append(
-                            "references",
-                            {
-                                "reference_doctype": "RAB Work Order",
-                                "reference_name": wo.name,
-                                "total_amount": flt(wo.contract_value),
-                                "outstanding_amount": flt(wo.contract_value),
-                                "allocated_amount": 0.0,
-                            },
-                        )
+                # Ensure RAB Work Order references are not present
+                self.references = [r for r in self.references if r.reference_doctype != "RAB Work Order"]
+
+                # On subsequent PEs (e.g. paying hold), deductions were already deducted on first PE
+                existing_pe_count = frappe.db.count(
+                    "Payment Entry Reference",
+                    {
+                        "reference_doctype": "Purchase Invoice",
+                        "reference_name": ref.reference_name,
+                        "docstatus": 1,
+                    },
+                )
+                if existing_pe_count > 0:
+                    continue
 
                 if not ra_bill.deductions:
                     continue
@@ -185,6 +188,7 @@ class CustomPaymentEntry(PaymentEntry):
                     )
 
         if has_ra_bill_pi:
+            self.references = [r for r in self.references if r.reference_doctype != "RAB Work Order"]
             total_allocated = sum(
                 flt(r.allocated_amount or r.total_amount or r.outstanding_amount)
                 for r in self.references
@@ -270,55 +274,15 @@ class CustomPaymentEntry(PaymentEntry):
         """
         Skip ERPNext outstanding validation for RAB Work Orders.
         """
-
-        normal_refs = []
-        rab_refs = []
-
-        for ref in self.references:
-            if ref.reference_doctype == "RAB Work Order":
-                rab_refs.append(ref)
-            else:
-                normal_refs.append(ref)
-
-        original_refs = self.references
-
-        self.references = normal_refs
+        self.references = [r for r in self.references if r.reference_doctype != "RAB Work Order"]
         super().validate_allocated_amount()
-
-        self.references = original_refs
-
-        for ref in rab_refs:
-            if not ref.reference_name:
-                continue
-            work_order = frappe.get_doc("RAB Work Order", ref.reference_name)
-            contract_value = flt(work_order.contract_value)
-            ref.total_amount = contract_value
-
-            if not ref.allocated_amount:
-                ref.allocated_amount = 0.0
-
-            from ra_bill.ra_bill.doctype.rab_work_order.rab_work_order import get_rab_work_order_allocated_amount
-            already_allocated = get_rab_work_order_allocated_amount(ref.reference_name, exclude_pe=self.name)
-            current_outstanding = max(0.0, contract_value - already_allocated)
-
-            ref.outstanding_amount = max(0.0, current_outstanding - flt(ref.allocated_amount))
 
     def clear_unallocated_reference_document_rows(self):
         """
-        Preserve RAB Work Order reference rows even if allocated_amount is 0.
+        Standard ERPNext behavior, ensuring no RAB Work Order reference rows remain.
         """
-        normal_refs = []
-        rab_refs = []
-
-        for ref in self.references:
-            if ref.reference_doctype == "RAB Work Order":
-                rab_refs.append(ref)
-            else:
-                normal_refs.append(ref)
-
-        self.references = normal_refs
         super().clear_unallocated_reference_document_rows()
-        self.references = list(self.references) + rab_refs
+        self.references = [r for r in self.references if r.reference_doctype != "RAB Work Order"]
 
     def add_deductions_gl_entries(self, gl_entries):
         for d in self.get("deductions"):
@@ -356,7 +320,7 @@ class CustomPaymentEntry(PaymentEntry):
         is_mob = getattr(self, "is_mobilization_advance", 0)
         is_adhoc = getattr(self, "is_adhoc_advance", 0) or (
             self.payment_type == "Pay"
-            and any(r.reference_doctype == "RAB Work Order" for r in self.references)
+            and (getattr(self, "work_order", None) or any(r.reference_doctype == "RAB Work Order" for r in self.references))
             and not any(r.reference_doctype == "Purchase Invoice" for r in self.references)
             and not is_mob
         )
@@ -462,3 +426,146 @@ class CustomPaymentEntry(PaymentEntry):
 
         from erpnext.accounts.general_ledger import make_gl_entries
         make_gl_entries(gl_entries, cancel=cancel, adv_adj=adv_adj)
+
+    def on_submit(self):
+        super().on_submit()
+        update_ra_bill_hold_qty_from_pe(self)
+
+    def on_cancel(self):
+        super().on_cancel()
+        update_ra_bill_hold_qty_from_pe(self)
+
+
+def update_ra_bill_hold_qty_from_pe(doc, method=None):
+    """
+    Hook called on Payment Entry submission and cancellation.
+    Whenever a Payment Entry linked to a Purchase Invoice with a populated ra_bill field
+    is submitted or cancelled, recalculates how much of the Hold VALUE has been paid cumulative
+    across all submitted Payment Entries for this invoice beyond the immediately-payable portion,
+    and updates the linked RA Bill's item rows (hold_qty) and parent total_hold_value via db_set.
+
+    DOCUMENTED ASSUMPTION:
+    In most real cases there will only be one item row with a hold on a given bill, so the
+    proportional distribution is mainly a safety mechanism for the rare multi-row-hold case,
+    since true per-row payment allocation isn't tracked by Frappe/ERPNext at the line-item level.
+    """
+    if not doc or not getattr(doc, "references", None):
+        return
+
+    for ref in doc.references:
+        if ref.reference_doctype == "Purchase Invoice" and ref.reference_name:
+            ra_bill_name = frappe.db.get_value("Purchase Invoice", ref.reference_name, "ra_bill")
+            if ra_bill_name:
+                recalculate_ra_bill_hold_qty(ra_bill_name, invoice_name=ref.reference_name)
+
+
+def recalculate_ra_bill_hold_qty(ra_bill_name, invoice_name=None):
+    """
+    Recalculates hold_qty on RA Bill items and total_hold_value on RA Bill parent.
+    Formula:
+      hold_value_paid_so_far = max(0, total_paid_across_all_submitted_PEs_for_this_PI - immediately_payable_amount)
+      hold_value_paid_so_far = min(hold_value_paid_so_far, total_hold_value) # never exceed original hold value
+      hold_value_pending = total_hold_value - hold_value_paid_so_far
+
+      for each item row with original_hold_qty > 0:
+          row_hold_value = row.original_hold_qty * row.rate
+          row_share = row_hold_value / total_hold_value
+          row_hold_value_paid = hold_value_paid_so_far * row_share
+          row_hold_qty_paid = row_hold_value_paid / row.rate
+          row.hold_qty = max(0, original_hold_qty - row_hold_qty_paid) # updated via db_set
+    """
+    if not ra_bill_name:
+        return
+
+    ra_bill = frappe.get_doc("RA Bill", ra_bill_name)
+    if not ra_bill.items:
+        return
+
+    if not invoice_name:
+        invoice_name = ra_bill.purchase_invoice
+    if not invoice_name:
+        return
+
+    # 1. Ensure original_hold_qty is populated on rows
+    has_any_hold = False
+    for r in ra_bill.items:
+        orig = flt(getattr(r, "original_hold_qty", 0))
+        cur = flt(getattr(r, "hold_qty", 0))
+        if orig <= 0 and cur > 0:
+            orig = cur
+            frappe.db.set_value("RA Bill Item", r.name, "original_hold_qty", orig, update_modified=False)
+            r.original_hold_qty = orig
+        if orig > 0:
+            has_any_hold = True
+
+    if not has_any_hold:
+        return
+
+    orig_total_hold_value = flt(ra_bill.get("original_total_hold_value") or 0.0)
+    calculated_orig_hold_value = sum(flt(r.original_hold_qty) * flt(r.rate) for r in ra_bill.items)
+    if calculated_orig_hold_value > 0 and (orig_total_hold_value <= 0 or abs(orig_total_hold_value - calculated_orig_hold_value) > 0.01):
+        orig_total_hold_value = calculated_orig_hold_value
+        frappe.db.set_value("RA Bill", ra_bill.name, "original_total_hold_value", round(orig_total_hold_value, 2), update_modified=False)
+
+    if orig_total_hold_value <= 0:
+        return
+
+    # 2. Determine immediately payable amount
+    gross_work_value = flt(ra_bill.gross_work_value)
+    net_payable = flt(ra_bill.net_payable)
+    if gross_work_value > 0 and net_payable > 0:
+        hold_fraction = orig_total_hold_value / gross_work_value
+        immediately_payable_amount = round(max(0.0, net_payable * (1.0 - hold_fraction)), 2)
+    else:
+        immediately_payable_amount = 0.0
+
+    # 3. Calculate cumulative paid so far across all submitted PEs for this PI
+    pi_outstanding = flt(frappe.db.get_value("Purchase Invoice", invoice_name, "outstanding_amount"))
+
+    submitted_pes = frappe.db.sql("""
+        SELECT pe.name, pe.paid_amount, per.allocated_amount
+        FROM `tabPayment Entry Reference` per
+        JOIN `tabPayment Entry` pe ON pe.name = per.parent
+        WHERE per.reference_doctype = 'Purchase Invoice'
+          AND per.reference_name = %s
+          AND pe.docstatus = 1
+    """, (invoice_name,), as_dict=True)
+
+    # If invoice is fully settled (outstanding <= 0.005) and submitted PEs exist, full hold is paid
+    if pi_outstanding <= 0.005 and len(submitted_pes) > 0:
+        hold_value_paid_so_far = orig_total_hold_value
+    else:
+        total_paid_across_all_submitted_pes = sum(flt(p.paid_amount) for p in submitted_pes)
+        hold_value_paid_so_far = max(0.0, total_paid_across_all_submitted_pes - immediately_payable_amount)
+        hold_value_paid_so_far = min(hold_value_paid_so_far, orig_total_hold_value)
+
+    # 4. Proportional distribution across all rows that have original_hold_qty > 0
+    # In most real cases there is only 1 row with a hold. Proportional distribution handles multi-row holds safely.
+    for row in ra_bill.items:
+        orig_row_hold = flt(getattr(row, "original_hold_qty", 0))
+        if orig_row_hold <= 0:
+            continue
+        rate = flt(row.rate)
+        if rate <= 0:
+            continue
+
+        row_hold_value = orig_row_hold * rate
+        row_share = row_hold_value / orig_total_hold_value if orig_total_hold_value > 0 else 0.0
+        row_hold_value_paid = hold_value_paid_so_far * row_share
+        row_hold_qty_paid = row_hold_value_paid / rate
+        new_hold_qty = max(0.0, round(orig_row_hold - row_hold_qty_paid, 4))
+
+        frappe.db.set_value("RA Bill Item", row.name, "hold_qty", new_hold_qty, update_modified=False)
+        row.hold_qty = new_hold_qty
+
+    # 5. Recalculate and update total_hold_value, total_hold_qty, original totals on parent RA Bill
+    new_total_hold_value = sum(flt(r.hold_qty) * flt(r.rate) for r in ra_bill.items)
+    new_total_hold_qty = sum(flt(r.hold_qty) for r in ra_bill.items)
+    orig_total_hold_qty = sum(flt(getattr(r, "original_hold_qty", 0)) for r in ra_bill.items)
+
+    frappe.db.set_value("RA Bill", ra_bill.name, {
+        "total_hold_value": round(new_total_hold_value, 2),
+        "total_hold_qty": round(new_total_hold_qty, 4),
+        "original_total_hold_qty": round(orig_total_hold_qty, 4),
+        "original_total_hold_value": round(orig_total_hold_value, 2),
+    }, update_modified=False)

@@ -223,7 +223,10 @@ frappe.ui.form.on("RA Bill Secured Advance", {
 });
 
 frappe.ui.form.on("RA Bill Item", {
+	current_qty: (frm, cdt, cdn) => recalc_row(frm, cdt, cdn),
 	cumulative_qty: (frm, cdt, cdn) => recalc_row(frm, cdt, cdn),
+	reject_qty: (frm, cdt, cdn) => recalc_row(frm, cdt, cdn),
+	hold_qty: (frm, cdt, cdn) => recalc_row(frm, cdt, cdn),
 	cumulative_percent: (frm, cdt, cdn) => recalc_row(frm, cdt, cdn),
 	rate: (frm, cdt, cdn) => recalc_row(frm, cdt, cdn),
 	items_remove: (frm) => frm_recalc(frm),
@@ -239,8 +242,48 @@ function recalc_row_values(frm, row) {
 	row.contract_amount = flt(row.boq_qty) * flt(row.rate);
 	const measured = (frm.doc.billing_method || "Item Rate (Measured)") === "Item Rate (Measured)";
 	if (measured) {
-		row.current_qty = flt(row.cumulative_qty) - flt(row.previous_qty);
-		row.current_amount = flt(row.current_qty) * flt(row.rate);
+		if (row.current_qty === undefined || row.current_qty === null) {
+			row.current_qty = flt(row.cumulative_qty) - flt(row.previous_qty);
+		}
+
+		// ── Reject / Hold / Approved Qty live calculation ──────────────
+		// Mirrors the portal's RowEditorModal.tsx logic exactly:
+		//   approved_qty = max(0, current_qty - reject_qty)
+		//   hold_qty is a subset of approved_qty (cannot exceed it)
+		const currentQty = flt(row.current_qty);
+		const rejectQty = flt(row.reject_qty);
+		const holdQty = flt(row.hold_qty);
+
+		// Client-side warning: reject_qty cannot exceed current_qty
+		if (rejectQty < 0) {
+			frappe.show_alert({
+				message: __("Row {0}: Reject Qty cannot be negative", [row.idx]),
+				indicator: "red",
+			});
+		} else if (rejectQty > currentQty) {
+			frappe.show_alert({
+				message: __("Row {0}: Reject Qty ({1}) exceeds This Bill Qty ({2})", [row.idx, rejectQty, currentQty]),
+				indicator: "red",
+			});
+		}
+
+		row.approved_qty = Math.max(0, currentQty - rejectQty);
+
+		// Client-side warning: hold_qty cannot exceed approved_qty
+		if (holdQty < 0) {
+			frappe.show_alert({
+				message: __("Row {0}: Hold Qty cannot be negative", [row.idx]),
+				indicator: "orange",
+			});
+		} else if (holdQty > row.approved_qty) {
+			frappe.show_alert({
+				message: __("Row {0}: Hold Qty ({1}) exceeds Approved Qty ({2})", [row.idx, holdQty, row.approved_qty]),
+				indicator: "orange",
+			});
+		}
+
+		row.cumulative_qty = flt(row.previous_qty) + flt(row.approved_qty);
+		row.current_amount = flt(row.approved_qty) * flt(row.rate);
 		row.previous_amount = flt(row.previous_qty) * flt(row.rate);
 		row.cumulative_amount = flt(row.cumulative_qty) * flt(row.rate);
 		row.deviation_qty = flt(row.cumulative_qty) - flt(row.boq_qty);
@@ -257,11 +300,17 @@ function recalc_row_values(frm, row) {
 // retention may differ once the cap is reached.
 function frm_recalc(frm) {
 	let gross = 0,
-		prev = 0;
+		prev = 0,
+		hold = 0,
+		reject = 0;
 	(frm.doc.items || []).forEach((r) => {
 		gross += flt(r.current_amount);
 		prev += flt(r.previous_amount);
+		hold += flt(r.hold_qty) * flt(r.rate);
+		reject += flt(r.reject_qty) * flt(r.rate);
 	});
+	frm.doc.total_hold_value = hold;
+	frm.doc.total_reject_value = reject;
 	let escalation = 0;
 	(frm.doc.escalations || []).forEach((e) => {
 		const base = flt(e.base_index);
@@ -330,6 +379,8 @@ function frm_recalc(frm) {
 	const totalInvoice = billable + gst;
 
 	frm.set_value("gross_work_value", gross);
+	frm.set_value("total_hold_value", hold);
+	frm.set_value("total_reject_value", reject);
 	frm.set_value("previous_billed_value", prev);
 	frm.set_value("cumulative_work_value", gross + prev);
 	frm.set_value("escalation_amount", escalation);
