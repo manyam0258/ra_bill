@@ -6,6 +6,8 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import flt
 
+from ra_bill.overrides.payment_entry import set_pe_work_order, _wo_fieldname
+
 # Standard additions/deductions seeded onto a new Work Order. Each RA Bill carries
 # these rows forward and computes the actual amount on its billable value.
 DEFAULT_ADDITIONS = [
@@ -87,18 +89,19 @@ def make_payment_entry(work_order):
 
     pe.paid_amount = flt(doc.contract_value)
     pe.received_amount = flt(doc.contract_value)
-    pe.work_order = doc.name
+    set_pe_work_order(pe, doc.name)
 
     return pe
 
 def get_rab_work_order_allocated_amount(work_order, exclude_pe=None):
-    query = """
+    _col = _wo_fieldname()
+    query = f"""
         SELECT COALESCE(SUM(pe.paid_amount), 0.0)
         FROM `tabPayment Entry` pe
         LEFT JOIN `tabPayment Entry Reference` per ON per.parent = pe.name
         WHERE pe.docstatus = 1
           AND (
-              pe.work_order = %s
+              pe.`{_col}` = %s
               OR (per.reference_doctype = 'RAB Work Order' AND per.reference_name = %s)
           )
           AND (pe.is_adhoc_advance = 1 OR pe.is_mobilization_advance = 1)
@@ -176,7 +179,7 @@ def create_adhoc_payment_entry(work_order, advance_amount=None):
             frappe.db.get_value("Account", payable_acc, "account_currency") or company_currency
         )
 
-    pe.work_order = doc.name
+    set_pe_work_order(pe, doc.name)
 
     pe.set_missing_values()
     return pe
@@ -237,7 +240,7 @@ def create_mobilization_payment_entry(work_order, advance_amount=None):
             frappe.db.get_value("Account", payable_acc, "account_currency") or company_currency
         )
 
-    pe.work_order = doc.name
+    set_pe_work_order(pe, doc.name)
 
     # Auto-populate TDS deduction from RAB Work Order's deductions child table if configured
     tds_row = next((d for d in doc.get("deductions", []) if d.deduction_type == "TDS"), None)

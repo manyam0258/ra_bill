@@ -80,18 +80,18 @@ export function RowEditorModal({
 	};
 
 	return (
-		<div className="bg-slate-50 dark:bg-[#1e1e2d] border-2 border-indigo-500/50 dark:border-[#7367f0] rounded-2xl p-6 shadow-2xl space-y-6 my-4 transition-all animate-fadeIn">
+		<div className="bg-[#111A30] border-2 border-cyan-500/40 rounded-2xl p-6 shadow-2xl shadow-cyan-950/40 space-y-6 my-4 transition-all animate-fadeIn backdrop-blur-md">
 			{/* A. TOP ACTION TOOLBAR */}
-			<div className="flex flex-wrap items-center justify-between border-b border-slate-200 dark:border-[#32344d] pb-4 gap-4">
+			<div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-4 gap-4">
 				<div className="flex items-center gap-3">
-					<span className="w-8 h-8 rounded-xl bg-indigo-600 dark:bg-[#7367f0] text-white flex items-center justify-center font-bold text-xs">
+					<span className="w-8 h-8 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-md shadow-cyan-900/40">
 						#{rowIndex + 1}
 					</span>
 					<div>
-						<h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+						<h4 className="font-bold text-sm text-slate-100">
 							Editing Row #{rowIndex + 1} of {totalRows}
 						</h4>
-						<p className="text-[11px] text-slate-500 dark:text-[#8f93a7]">
+						<p className="text-[11px] text-slate-400">
 							Configure item code, quantities, rates, and accounting dimensions
 						</p>
 					</div>
@@ -101,7 +101,7 @@ export function RowEditorModal({
 					<button
 						type="button"
 						onClick={onInsertAbove}
-						className="px-3 py-1.5 bg-white dark:bg-[#232333] hover:bg-slate-100 dark:hover:bg-[#282a42] text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-[#32344d] rounded-xl font-semibold transition flex items-center gap-1"
+						className="px-3 py-1.5 bg-[#0E1726] hover:bg-slate-800 text-slate-300 border border-slate-700/60 rounded-xl font-semibold transition flex items-center gap-1 cursor-pointer"
 					>
 						<ArrowUp size={14} /> Insert Above
 					</button>
@@ -109,7 +109,7 @@ export function RowEditorModal({
 					<button
 						type="button"
 						onClick={onInsertBelow}
-						className="px-3 py-1.5 bg-white dark:bg-[#232333] hover:bg-slate-100 dark:hover:bg-[#282a42] text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-[#32344d] rounded-xl font-semibold transition flex items-center gap-1"
+						className="px-3 py-1.5 bg-[#0E1726] hover:bg-slate-800 text-slate-300 border border-slate-700/60 rounded-xl font-semibold transition flex items-center gap-1 cursor-pointer"
 					>
 						<ArrowDown size={14} /> Insert Below
 					</button>
@@ -117,7 +117,7 @@ export function RowEditorModal({
 					<button
 						type="button"
 						onClick={onDuplicate}
-						className="px-3 py-1.5 bg-white dark:bg-[#232333] hover:bg-slate-100 dark:hover:bg-[#282a42] text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-[#32344d] rounded-xl font-semibold transition flex items-center gap-1"
+						className="px-3 py-1.5 bg-[#0E1726] hover:bg-slate-800 text-slate-300 border border-slate-700/60 rounded-xl font-semibold transition flex items-center gap-1 cursor-pointer"
 					>
 						<Copy size={14} /> Duplicate
 					</button>
@@ -125,7 +125,7 @@ export function RowEditorModal({
 					<button
 						type="button"
 						onClick={onDelete}
-						className="px-3 py-1.5 bg-rose-500/15 hover:bg-rose-500/25 text-rose-600 dark:text-[#ea5455] border border-rose-500/30 rounded-xl font-semibold transition flex items-center gap-1"
+						className="px-3 py-1.5 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 rounded-xl font-semibold transition flex items-center gap-1 cursor-pointer"
 					>
 						<Trash2 size={14} /> Delete Row
 					</button>
@@ -133,7 +133,7 @@ export function RowEditorModal({
 					<button
 						type="button"
 						onClick={onClose}
-						className="p-1.5 bg-slate-200 dark:bg-[#282a42] hover:bg-slate-300 dark:hover:bg-[#32344d] text-slate-700 dark:text-slate-200 rounded-xl transition"
+						className="p-1.5 bg-[#0E1726] hover:bg-slate-800 text-slate-300 border border-slate-700/60 rounded-xl transition cursor-pointer"
 						title="Close Row Editor"
 					>
 						<X size={16} />
@@ -146,7 +146,7 @@ export function RowEditorModal({
 				{/* Left Column */}
 				<div className="space-y-4">
 					<div>
-						<label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+						<label className="block font-bold text-slate-300 mb-1.5">
 							Item (ERPNext Item Link) *
 						</label>
 						<ItemLinkDropdown
@@ -156,7 +156,7 @@ export function RowEditorModal({
 					</div>
 
 					<div>
-						<label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+						<label className="block font-bold text-slate-300 mb-1.5">
 							Description *
 						</label>
 						<textarea
@@ -164,12 +164,12 @@ export function RowEditorModal({
 							value={row.description || ""}
 							onChange={(e) => handleFieldChange("description", e.target.value)}
 							placeholder="Detailed scope of work / item specifications..."
-							className="w-full p-2.5 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+							className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 						/>
 					</div>
 
 					<div>
-						<label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+						<label className="block font-bold text-slate-300 mb-1.5">
 							Cost Code / WBS Reference
 						</label>
 						<input
@@ -177,7 +177,7 @@ export function RowEditorModal({
 							value={row.cost_center || row.wbs_code || ""}
 							onChange={(e) => handleFieldChange("cost_center", e.target.value)}
 							placeholder="e.g. CC-CIVIL-01"
-							className="w-full p-2.5 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+							className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 						/>
 					</div>
 				</div>
@@ -185,7 +185,7 @@ export function RowEditorModal({
 				{/* Right Column */}
 				<div className="space-y-4">
 					<div>
-						<label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+						<label className="block font-bold text-slate-300 mb-1.5">
 							Unit of Measure (UOM) *
 						</label>
 						<input
@@ -193,14 +193,14 @@ export function RowEditorModal({
 							value={row.uom || "Nos"}
 							onChange={(e) => handleFieldChange("uom", e.target.value)}
 							placeholder="e.g. Cum, Sqm, Nos, MT"
-							className="w-full p-2.5 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+							className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 						/>
 					</div>
 
 					{mode === "wo" ? (
 						<>
 							<div>
-								<label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+								<label className="block font-bold text-slate-300 mb-1.5">
 									Work Order Quantity *
 								</label>
 								<input
@@ -208,12 +208,12 @@ export function RowEditorModal({
 									step="any"
 									value={row.qty === 0 ? "" : (row.qty ?? "")}
 									onChange={(e) => handleFieldChange("qty", e.target.value === "" ? 0 : Number(e.target.value))}
-									className="w-full p-2.5 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+									className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl font-mono text-slate-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 								/>
 							</div>
 
 							<div>
-								<label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+								<label className="block font-bold text-slate-300 mb-1.5">
 									Contract Rate (INR) *
 								</label>
 								<input
@@ -221,13 +221,13 @@ export function RowEditorModal({
 									step="any"
 									value={row.rate === 0 ? "" : (row.rate ?? "")}
 									onChange={(e) => handleFieldChange("rate", e.target.value === "" ? 0 : Number(e.target.value))}
-									className="w-full p-2.5 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+									className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl font-mono text-slate-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 								/>
 							</div>
 
-							<div className="p-3 bg-indigo-50 dark:bg-[#7367f0]/15 rounded-xl border border-indigo-200 dark:border-[#7367f0]/30 flex justify-between items-center">
-								<span className="font-bold text-indigo-700 dark:text-[#7367f0]">Line Amount (INR):</span>
-								<span className="font-mono font-black text-indigo-900 dark:text-[#7367f0] text-sm">
+							<div className="p-3 bg-cyan-500/10 rounded-xl border border-cyan-500/30 flex justify-between items-center">
+								<span className="font-bold text-cyan-400">Line Amount (INR):</span>
+								<span className="font-mono font-black text-cyan-300 text-sm">
 									₹ {(Number(row.qty || 0) * Number(row.rate || 0)).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
 								</span>
 							</div>
@@ -236,19 +236,19 @@ export function RowEditorModal({
 						<>
 							<div className="grid grid-cols-3 gap-3">
 								<div>
-									<label className="block font-bold text-slate-500 dark:text-[#8f93a7] mb-1.5">
+									<label className="block font-bold text-slate-400 mb-1.5">
 										Work Order Qty
 									</label>
 									<input
 										type="number"
 										value={row.boq_qty ?? 0}
 										readOnly
-										className="w-full p-2.5 bg-slate-100 dark:bg-[#1e1e2d] border border-slate-200 dark:border-[#2d2d3f] rounded-xl font-mono text-slate-500 cursor-not-allowed"
+										className="w-full p-2.5 bg-[#0E1726]/60 border border-slate-800 rounded-xl font-mono text-slate-400 cursor-not-allowed"
 									/>
 								</div>
 
 								<div>
-									<label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+									<label className="block font-bold text-slate-300 mb-1.5">
 										Contract Rate (INR)
 									</label>
 									<input
@@ -256,26 +256,26 @@ export function RowEditorModal({
 										step="any"
 										value={row.rate === 0 ? "" : (row.rate ?? "")}
 										onChange={(e) => handleFieldChange("rate", e.target.value === "" ? 0 : Number(e.target.value))}
-										className="w-full p-2.5 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl font-mono text-slate-900 dark:text-slate-100"
+										className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl font-mono text-slate-100 focus:outline-none focus:border-cyan-400"
 									/>
 								</div>
 
 								<div>
-									<label className="block font-bold text-slate-500 dark:text-[#8f93a7] mb-1.5">
+									<label className="block font-bold text-slate-400 mb-1.5">
 										Previous Billed Qty
 									</label>
 									<input
 										type="number"
 										value={row.previous_qty || 0}
 										readOnly
-										className="w-full p-2.5 bg-slate-100 dark:bg-[#1e1e2d] border border-slate-200 dark:border-[#2d2d3f] rounded-xl font-mono text-slate-500 cursor-not-allowed"
+										className="w-full p-2.5 bg-[#0E1726]/60 border border-slate-800 rounded-xl font-mono text-slate-400 cursor-not-allowed"
 									/>
 								</div>
 							</div>
 
 							<div className="grid grid-cols-2 gap-3">
 								<div>
-									<label className="block font-bold text-indigo-600 dark:text-[#7367f0] mb-1.5">
+									<label className="block font-bold text-cyan-400 mb-1.5">
 										This Bill Qty *
 									</label>
 									<input
@@ -283,12 +283,12 @@ export function RowEditorModal({
 										step="any"
 										value={row.this_bill_qty === 0 ? "" : (row.this_bill_qty ?? "")}
 										onChange={(e) => handleFieldChange("this_bill_qty", e.target.value === "" ? 0 : Number(e.target.value))}
-										className="w-full p-2.5 bg-white dark:bg-[#232333] border-2 border-indigo-500/60 dark:border-[#7367f0] rounded-xl font-mono font-bold text-indigo-600 dark:text-[#7367f0] focus:outline-none"
+										className="w-full p-2.5 bg-[#0E1726] border-2 border-cyan-400/80 rounded-xl font-mono font-bold text-cyan-300 focus:outline-none"
 									/>
 								</div>
 
 								<div>
-									<label className="block font-bold text-rose-600 dark:text-rose-400 mb-1.5">
+									<label className="block font-bold text-rose-400 mb-1.5">
 										Reject Qty
 									</label>
 									<input
@@ -297,17 +297,17 @@ export function RowEditorModal({
 										value={row.reject_qty === 0 ? "" : (row.reject_qty ?? "")}
 										onChange={(e) => handleFieldChange("reject_qty", e.target.value === "" ? 0 : Number(e.target.value))}
 										placeholder="0"
-										className="w-full p-2.5 bg-white dark:bg-[#232333] border border-rose-300 dark:border-rose-500/40 rounded-xl font-mono font-bold text-rose-600 dark:text-rose-400 focus:outline-none focus:border-rose-500"
+										className="w-full p-2.5 bg-[#0E1726] border border-rose-500/40 rounded-xl font-mono font-bold text-rose-400 focus:outline-none focus:border-rose-400"
 									/>
 									{Number(row.reject_qty || 0) > Number(row.this_bill_qty || 0) && (
-										<p className="text-[10px] text-rose-500 font-bold mt-1">Cannot exceed This Bill Qty ({row.this_bill_qty || 0})</p>
+										<p className="text-[10px] text-rose-400 font-bold mt-1">Cannot exceed This Bill Qty ({row.this_bill_qty || 0})</p>
 									)}
 								</div>
 							</div>
 
 							<div className="grid grid-cols-3 gap-3">
 								<div>
-									<label className="block font-bold text-emerald-600 dark:text-emerald-400 mb-1.5">
+									<label className="block font-bold text-emerald-400 mb-1.5">
 										Approved Qty
 									</label>
 									<input
@@ -315,12 +315,12 @@ export function RowEditorModal({
 										value={Math.max(0, Number(row.this_bill_qty || 0) - Number(row.reject_qty || 0))}
 										readOnly
 										disabled
-										className="w-full p-2.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl font-mono font-bold text-emerald-600 dark:text-emerald-400 cursor-not-allowed"
+										className="w-full p-2.5 bg-emerald-950/20 border border-emerald-800/40 rounded-xl font-mono font-bold text-emerald-400 cursor-not-allowed"
 									/>
 								</div>
 
 								<div>
-									<label className="block font-bold text-amber-600 dark:text-amber-400 mb-1.5">
+									<label className="block font-bold text-amber-400 mb-1.5">
 										Hold Qty
 									</label>
 									<input
@@ -329,15 +329,15 @@ export function RowEditorModal({
 										value={row.hold_qty === 0 ? "" : (row.hold_qty ?? "")}
 										onChange={(e) => handleFieldChange("hold_qty", e.target.value === "" ? 0 : Number(e.target.value))}
 										placeholder="0"
-										className="w-full p-2.5 bg-white dark:bg-[#232333] border border-amber-300 dark:border-amber-500/40 rounded-xl font-mono font-bold text-amber-600 dark:text-amber-400 focus:outline-none focus:border-amber-500"
+										className="w-full p-2.5 bg-[#0E1726] border border-amber-500/40 rounded-xl font-mono font-bold text-amber-400 focus:outline-none focus:border-amber-400"
 									/>
 									{Number(row.hold_qty || 0) > Math.max(0, Number(row.this_bill_qty || 0) - Number(row.reject_qty || 0)) && (
-										<p className="text-[10px] text-amber-500 font-bold mt-1">Cannot exceed Approved Qty ({Math.max(0, Number(row.this_bill_qty || 0) - Number(row.reject_qty || 0))})</p>
+										<p className="text-[10px] text-amber-400 font-bold mt-1">Cannot exceed Approved Qty ({Math.max(0, Number(row.this_bill_qty || 0) - Number(row.reject_qty || 0))})</p>
 									)}
 								</div>
 
 								<div>
-									<label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+									<label className="block font-bold text-slate-300 mb-1.5">
 										Cumulative Qty
 									</label>
 									<input
@@ -345,17 +345,17 @@ export function RowEditorModal({
 										value={(Number(row.previous_qty || 0) + Math.max(0, Number(row.this_bill_qty || 0) - Number(row.reject_qty || 0)))}
 										readOnly
 										disabled
-										className="w-full p-2.5 bg-slate-100 dark:bg-[#1e1e2d] border border-slate-200 dark:border-[#2d2d3f] rounded-xl font-mono text-slate-700 dark:text-slate-300 cursor-not-allowed opacity-90"
+										className="w-full p-2.5 bg-[#0E1726]/60 border border-slate-800 rounded-xl font-mono text-slate-300 cursor-not-allowed opacity-90"
 									/>
 								</div>
 							</div>
 
-							<div className="p-3.5 bg-indigo-50 dark:bg-[#7367f0]/15 rounded-xl border border-indigo-200 dark:border-[#7367f0]/40 flex justify-between items-center">
+							<div className="p-3.5 bg-cyan-500/10 rounded-xl border border-cyan-500/30 flex justify-between items-center">
 								<div>
-									<span className="font-bold text-indigo-700 dark:text-[#7367f0]">This Bill Amount (INR):</span>
+									<span className="font-bold text-cyan-400">This Bill Amount (INR):</span>
 									<span className="text-[10px] text-slate-400 block">Approved Qty × Rate</span>
 								</div>
-								<span className="font-mono font-black text-indigo-900 dark:text-[#7367f0] text-sm">
+								<span className="font-mono font-black text-cyan-300 text-sm">
 									₹ {(Math.max(0, Number(row.this_bill_qty || 0) - Number(row.reject_qty || 0)) * Number(row.rate || 0)).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
 								</span>
 							</div>
@@ -365,16 +365,16 @@ export function RowEditorModal({
 			</div>
 
 			{/* C. BOTTOM SHORTCUTS & ACTIONS */}
-			<div className="flex flex-wrap items-center justify-between border-t border-slate-200 dark:border-[#32344d] pt-4 gap-4 text-xs">
-				<div className="text-slate-400 dark:text-[#8f93a7] font-mono text-[11px]">
-					Shortcuts: <kbd className="px-1.5 py-0.5 bg-slate-200 dark:bg-[#282a42] rounded">ESC</kbd> Close
+			<div className="flex flex-wrap items-center justify-between border-t border-slate-800 pt-4 gap-4 text-xs">
+				<div className="text-slate-400 font-mono text-[11px]">
+					Shortcuts: <kbd className="px-1.5 py-0.5 bg-[#0E1726] border border-slate-700/60 text-slate-300 rounded">ESC</kbd> Close
 				</div>
 
 				<div className="flex gap-2">
 					<button
 						type="button"
 						onClick={onInsertBelow}
-						className="px-4 py-2 bg-slate-200 dark:bg-[#282a42] hover:bg-slate-300 dark:hover:bg-[#32344d] text-slate-800 dark:text-slate-200 font-semibold rounded-xl transition"
+						className="px-4 py-2 bg-[#0E1726] hover:bg-slate-800 text-slate-300 border border-slate-700/60 font-semibold rounded-xl transition cursor-pointer"
 					>
 						+ Insert Below
 					</button>
@@ -382,7 +382,7 @@ export function RowEditorModal({
 					<button
 						type="button"
 						onClick={onClose}
-						className="px-5 py-2 bg-indigo-600 dark:bg-[#7367f0] hover:bg-indigo-700 dark:hover:bg-[#685dd8] text-white font-bold rounded-xl shadow-md transition flex items-center gap-1.5"
+						className="px-5 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-xl shadow-md shadow-cyan-900/40 hover:shadow-cyan-500/30 transition flex items-center gap-1.5 cursor-pointer"
 					>
 						<Check size={16} />
 						<span>Done Editing</span>

@@ -213,8 +213,29 @@ export function PortalApp() {
 
 	const getStatusBadge = (docstatus: number | string) => {
 		if (typeof docstatus === "string") {
+			const s = docstatus.toLowerCase();
+			const isDraft = ["draft", "pending"].includes(s);
+			const isCancelled = ["cancelled", "rejected", "closed"].includes(s);
+
+			if (isDraft) {
+				return (
+					<span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide bg-amber-500/10 text-amber-500 dark:text-amber-400 border border-amber-500/30">
+						<span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+						{docstatus}
+					</span>
+				);
+			}
+			if (isCancelled) {
+				return (
+					<span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-500/30">
+						<span className="h-1.5 w-1.5 rounded-full bg-rose-400"></span>
+						{docstatus}
+					</span>
+				);
+			}
 			return (
-				<span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-[#28c76f] border border-emerald-500/30">
+				<span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+					<span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
 					{docstatus}
 				</span>
 			);
@@ -222,19 +243,22 @@ export function PortalApp() {
 		switch (docstatus) {
 			case 0:
 				return (
-					<span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-600 dark:text-[#ff9f43] border border-amber-500/30">
+					<span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide bg-amber-500/10 text-amber-500 dark:text-amber-400 border border-amber-500/30">
+						<span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse"></span>
 						Draft
 					</span>
 				);
 			case 1:
 				return (
-					<span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-[#28c76f] border border-emerald-500/30">
+					<span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+						<span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
 						Approved
 					</span>
 				);
 			case 2:
 				return (
-					<span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/15 text-rose-600 dark:text-[#ea5455] border border-rose-500/30">
+					<span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-500/30">
+						<span className="h-1.5 w-1.5 rounded-full bg-rose-400"></span>
 						Cancelled
 					</span>
 				);
@@ -308,13 +332,13 @@ export function PortalApp() {
 	}, [raBills]);
 
 	return (
-		<div className="min-h-screen bg-slate-50 dark:bg-[#151521] text-slate-800 dark:text-slate-100 font-sans flex antialiased transition-colors duration-200">
+		<div className="min-h-screen bg-slate-50 dark:bg-[#080D1A] text-slate-800 dark:text-slate-100 font-sans flex antialiased transition-colors duration-200">
 
 			{/* SIDEBAR NAVIGATION */}
-			<aside className="w-64 bg-white dark:bg-[#1e1e2d] border-r border-slate-200 dark:border-[#2d2d3f] flex flex-col justify-between shrink-0 sticky top-0 h-screen z-30 transition-colors duration-200">
+			<aside className="w-64 bg-white dark:bg-[#070B16] border-r border-slate-200 dark:border-white/[0.06] flex flex-col justify-between shrink-0 sticky top-0 h-screen z-30 transition-colors duration-200 shadow-xl dark:shadow-2xl dark:shadow-black/50">
 				<div>
 					{/* TRIDASA Brand Logo Header */}
-					<div className="p-4 border-b border-slate-200 dark:border-[#2d2d3f]">
+					<div className="p-4 border-b border-slate-200 dark:border-white/[0.06]">
 						<TridasaLogo />
 					</div>
 
@@ -334,20 +358,20 @@ export function PortalApp() {
 										setSelectedPaymentEntryId(null);
 										setIsCreatingWO(false);
 									}}
-									className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${isActive
-											? "bg-indigo-50 dark:bg-[#7367f0]/15 text-indigo-600 dark:text-[#7367f0] border-r-4 border-indigo-600 dark:border-[#7367f0] shadow-xs"
-											: "text-slate-600 dark:text-[#8f93a7] hover:bg-slate-100 dark:hover:bg-[#282a42] hover:text-slate-900 dark:hover:text-white"
+									className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${isActive
+											? "bg-gradient-to-r from-cyan-500/20 to-blue-600/20 text-cyan-600 dark:text-cyan-300 border-l-[3px] border-[#00F2FE] shadow-sm shadow-cyan-500/10 font-bold"
+											: "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#111A30]/80 hover:text-slate-900 dark:hover:text-white border-l-[3px] border-transparent"
 										}`}
 								>
 									<div className="flex items-center gap-3">
-										<Icon size={18} className={isActive ? "text-indigo-600 dark:text-[#7367f0]" : "text-slate-400 dark:text-[#8f93a7]"} />
+										<Icon size={18} className={isActive ? "text-cyan-500 dark:text-[#00F2FE] drop-shadow-[0_0_8px_rgba(0,242,254,0.5)]" : "text-slate-400 dark:text-slate-400"} />
 										<span>{item.label}</span>
 									</div>
 									{item.badge !== undefined && item.badge > 0 && (
 										<span
 											className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${isActive
-													? "bg-indigo-600 dark:bg-[#7367f0] text-white"
-													: "bg-slate-200 dark:bg-[#282a42] text-slate-700 dark:text-[#8f93a7]"
+													? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-xs shadow-cyan-500/30"
+													: "bg-slate-200 dark:bg-[#111A30] text-slate-700 dark:text-slate-400 border border-transparent dark:border-white/[0.06]"
 												}`}
 										>
 											{item.badge}
@@ -360,16 +384,16 @@ export function PortalApp() {
 				</div>
 
 				{/* Sidebar Footer: Theme Toggle & User Card */}
-				<div className="p-3 border-t border-slate-200 dark:border-[#2d2d3f] space-y-2">
+				<div className="p-3 border-t border-slate-200 dark:border-white/[0.06] space-y-2">
 					<button
 						onClick={toggleTheme}
-						className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-[#8f93a7] hover:bg-slate-100 dark:hover:bg-[#282a42] transition border border-slate-200 dark:border-[#32344d]"
+						className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#111A30] hover:text-slate-900 dark:hover:text-white transition border border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-[#0B132B]/60"
 					>
 						<div className="flex items-center gap-2">
-							{theme === "dark" ? <Sun size={15} className="text-amber-400" /> : <Moon size={15} className="text-indigo-600" />}
+							{theme === "dark" ? <Sun size={15} className="text-amber-400" /> : <Moon size={15} className="text-cyan-600" />}
 							<span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
 						</div>
-						<div className={`w-8 h-4 rounded-full p-0.5 transition ${theme === "dark" ? "bg-[#7367f0]" : "bg-slate-300"}`}>
+						<div className={`w-8 h-4 rounded-full p-0.5 transition ${theme === "dark" ? "bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]" : "bg-slate-300"}`}>
 							<div className={`w-3 h-3 rounded-full bg-white transition transform ${theme === "dark" ? "translate-x-4" : ""}`} />
 						</div>
 					</button>
@@ -382,26 +406,26 @@ export function PortalApp() {
 			<div className="flex-1 flex flex-col min-w-0">
 
 				{/* TOP HEADER BAR */}
-				<header className="h-16 bg-white dark:bg-[#1e1e2d] border-b border-slate-200 dark:border-[#2d2d3f] px-6 flex items-center justify-between sticky top-0 z-20 shadow-xs transition-colors duration-200">
-					<div className="flex items-center gap-4 text-slate-500 dark:text-[#8f93a7]">
-						<button className="hover:text-slate-900 dark:hover:text-white transition"><MessageSquare size={18} /></button>
-						<button className="hover:text-slate-900 dark:hover:text-white transition"><Calendar size={18} /></button>
-						<button className="hover:text-slate-900 dark:hover:text-white transition"><Star size={18} /></button>
+				<header className="h-16 bg-white/95 dark:bg-[#0B132B]/95 backdrop-blur-md border-b border-slate-200 dark:border-white/[0.07] px-6 flex items-center justify-between sticky top-0 z-20 shadow-xs transition-colors duration-200">
+					<div className="flex items-center gap-4 text-slate-500 dark:text-slate-400">
+						<button className="hover:text-slate-900 dark:hover:text-cyan-400 transition"><MessageSquare size={18} /></button>
+						<button className="hover:text-slate-900 dark:hover:text-cyan-400 transition"><Calendar size={18} /></button>
+						<button className="hover:text-slate-900 dark:hover:text-cyan-400 transition"><Star size={18} /></button>
 						<div className="relative">
-							<button className="hover:text-slate-900 dark:hover:text-white transition"><Bell size={18} /></button>
-							<span className="w-2 h-2 rounded-full bg-rose-500 absolute -top-0.5 -right-0.5 ring-2 ring-white dark:ring-[#1e1e2d]"></span>
+							<button className="hover:text-slate-900 dark:hover:text-cyan-400 transition"><Bell size={18} /></button>
+							<span className="w-2 h-2 rounded-full bg-rose-500 absolute -top-0.5 -right-0.5 ring-2 ring-white dark:ring-[#0B132B]"></span>
 						</div>
 
-						<div className="h-4 w-[1px] bg-slate-200 dark:bg-[#2d2d3f] mx-1"></div>
+						<div className="h-4 w-[1px] bg-slate-200 dark:bg-white/[0.08] mx-1"></div>
 
 						<div className="relative w-64 hidden sm:block">
-							<Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#8f93a7]" />
+							<Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-400" />
 							<input
 								type="text"
 								placeholder="Search (⌘K)"
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
-								className="w-full pl-9 pr-4 py-1.5 text-xs bg-slate-100 dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-[#8f93a7] focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0] transition"
+								className="w-full pl-9 pr-4 py-1.5 text-xs bg-slate-100 dark:bg-[#111A30] border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-400 focus:outline-none focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20 transition"
 							/>
 						</div>
 					</div>
@@ -412,7 +436,7 @@ export function PortalApp() {
 								refreshRABills();
 								refreshWO();
 							}}
-							className="p-2 bg-slate-100 dark:bg-[#232333] hover:bg-slate-200 dark:hover:bg-[#282a42] text-slate-600 dark:text-[#8f93a7] dark:hover:text-white rounded-xl border border-slate-200 dark:border-[#32344d] transition"
+							className="p-2 bg-slate-100 dark:bg-[#111A30] hover:bg-slate-200 dark:hover:bg-[#16223F] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-cyan-400 rounded-xl border border-slate-200 dark:border-white/[0.08] transition shadow-xs"
 							title="Refresh Data"
 						>
 							<RefreshCw size={16} className={isLoadingRABills || isLoadingWO ? "animate-spin" : ""} />
@@ -424,7 +448,7 @@ export function PortalApp() {
 								setSelectedBill(null);
 								setIsCreatingWO(true);
 							}}
-							className="flex items-center gap-2 px-4 py-2 bg-indigo-600 dark:bg-[#7367f0] hover:bg-indigo-700 dark:hover:bg-[#685dd8] text-white font-semibold text-xs rounded-xl shadow-md transition"
+							className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-medium text-xs rounded-xl shadow-md shadow-cyan-900/40 hover:shadow-cyan-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer"
 						>
 							<Plus size={16} />
 							<span>+ New RAB Work Order</span>
@@ -433,7 +457,7 @@ export function PortalApp() {
 				</header>
 
 				{/* SCROLLABLE MAIN DASHBOARD CANVAS */}
-				<main className="flex-1 p-6 space-y-6 overflow-y-auto bg-slate-50 dark:bg-[#151521] transition-colors duration-200">
+				<main className="flex-1 p-6 space-y-6 overflow-y-auto bg-slate-50 dark:bg-[#080D1A] transition-colors duration-200">
 					{isCreatingWO ? (
 						<CreateRABWorkOrderForm
 							onCancel={() => setIsCreatingWO(false)}
@@ -502,53 +526,61 @@ export function PortalApp() {
 
 									{/* Top Metric Cards Strip */}
 									<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-										<div className="bg-white dark:bg-[#232333] border border-slate-200/80 dark:border-[#32344d] p-5 rounded-2xl shadow-sm space-y-2">
-											<div className="flex justify-between items-center text-slate-500 dark:text-[#8f93a7]">
-												<span className="text-[11px] font-bold uppercase tracking-wider">Total Work Orders</span>
-												<FolderGit2 size={18} className="text-indigo-600 dark:text-[#7367f0]" />
+										<div className="relative bg-white dark:bg-[#111A30] border border-slate-200/80 dark:border-white/[0.07] border-t-2 dark:border-t-[#00F2FE] p-5 rounded-2xl shadow-sm backdrop-blur-md space-y-2 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg hover:shadow-cyan-500/10 hover:border-cyan-500/30 group">
+											<div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
+												<span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Work Orders</span>
+												<div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-500 dark:text-[#00F2FE] border border-cyan-500/20 shadow-[0_0_12px_rgba(0,242,254,0.15)] group-hover:scale-110 transition-transform">
+													<FolderGit2 size={18} />
+												</div>
 											</div>
 											<p className="text-2xl font-black text-slate-900 dark:text-slate-100">{dashboardMetrics.totalWO}</p>
-											<p className="text-[10px] text-slate-400 dark:text-[#8f93a7]">Active BOQ Contracts</p>
+											<p className="text-[10px] text-slate-400 dark:text-slate-400">Active BOQ Contracts</p>
 										</div>
 
-										<div className="bg-white dark:bg-[#232333] border border-slate-200/80 dark:border-[#32344d] p-5 rounded-2xl shadow-sm space-y-2">
-											<div className="flex justify-between items-center text-slate-500 dark:text-[#8f93a7]">
-												<span className="text-[11px] font-bold uppercase tracking-wider">Cumulative Contract Value</span>
-												<Coins size={18} className="text-indigo-600 dark:text-[#7367f0]" />
+										<div className="relative bg-white dark:bg-[#111A30] border border-slate-200/80 dark:border-white/[0.07] border-t-2 dark:border-t-[#6366F1] p-5 rounded-2xl shadow-sm backdrop-blur-md space-y-2 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg hover:shadow-cyan-500/10 hover:border-cyan-500/30 group">
+											<div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
+												<span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Cumulative Contract Value</span>
+												<div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-500 dark:text-[#6366F1] border border-indigo-500/20 shadow-[0_0_12px_rgba(99,102,241,0.15)] group-hover:scale-110 transition-transform">
+													<Coins size={18} />
+												</div>
 											</div>
-											<p className="text-2xl font-black text-indigo-600 dark:text-[#7367f0]">{formatCurrency(dashboardMetrics.totalContractVal)}</p>
-											<p className="text-[10px] text-slate-400 dark:text-[#8f93a7]">Billed to Date: {formatCurrency(dashboardMetrics.totalGrossBilled)}</p>
+											<p className="text-2xl font-black text-indigo-600 dark:text-[#818CF8]">{formatCurrency(dashboardMetrics.totalContractVal)}</p>
+											<p className="text-[10px] text-slate-400 dark:text-slate-400">Billed to Date: {formatCurrency(dashboardMetrics.totalGrossBilled)}</p>
 										</div>
 
-										<div className="bg-white dark:bg-[#232333] border border-slate-200/80 dark:border-[#32344d] p-5 rounded-2xl shadow-sm space-y-2">
-											<div className="flex justify-between items-center text-slate-500 dark:text-[#8f93a7]">
-												<span className="text-[11px] font-bold uppercase tracking-wider">Balance / Pending to Bill</span>
-												<TrendingUp size={18} className="text-amber-500" />
+										<div className="relative bg-white dark:bg-[#111A30] border border-slate-200/80 dark:border-white/[0.07] border-t-2 dark:border-t-[#F59E0B] p-5 rounded-2xl shadow-sm backdrop-blur-md space-y-2 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg hover:shadow-cyan-500/10 hover:border-cyan-500/30 group">
+											<div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
+												<span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Balance / Pending to Bill</span>
+												<div className="p-2 rounded-xl bg-amber-500/10 text-amber-500 dark:text-[#F59E0B] border border-amber-500/20 shadow-[0_0_12px_rgba(245,158,11,0.15)] group-hover:scale-110 transition-transform">
+													<TrendingUp size={18} />
+												</div>
 											</div>
-											<p className="text-2xl font-black text-amber-600 dark:text-[#ff9f43]">{formatCurrency(dashboardMetrics.totalPendingToBill)}</p>
-											<p className="text-[10px] text-slate-400 dark:text-[#8f93a7]">Unbilled Portfolio Work</p>
+											<p className="text-2xl font-black text-amber-600 dark:text-[#FBBF24]">{formatCurrency(dashboardMetrics.totalPendingToBill)}</p>
+											<p className="text-[10px] text-slate-400 dark:text-slate-400">Unbilled Portfolio Work</p>
 										</div>
 
-										<div className="bg-white dark:bg-[#232333] border border-slate-200/80 dark:border-[#32344d] p-5 rounded-2xl shadow-sm space-y-2">
-											<div className="flex justify-between items-center text-slate-500 dark:text-[#8f93a7]">
-												<span className="text-[11px] font-bold uppercase tracking-wider">Advances Disbursed</span>
-												<CreditCard size={18} className="text-emerald-500" />
+										<div className="relative bg-white dark:bg-[#111A30] border border-slate-200/80 dark:border-white/[0.07] border-t-2 dark:border-t-[#10B981] p-5 rounded-2xl shadow-sm backdrop-blur-md space-y-2 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg hover:shadow-cyan-500/10 hover:border-cyan-500/30 group">
+											<div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
+												<span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Advances Disbursed</span>
+												<div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 dark:text-[#10B981] border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.15)] group-hover:scale-110 transition-transform">
+													<CreditCard size={18} />
+												</div>
 											</div>
-											<p className="text-2xl font-black text-emerald-600 dark:text-[#28c76f]">{formatCurrency(dashboardMetrics.totalAdvancesDisbursed)}</p>
-											<p className="text-[10px] text-rose-500 dark:text-[#ea5455] font-semibold">Pending Recovery: {formatCurrency(dashboardMetrics.totalAdvancePending)}</p>
+											<p className="text-2xl font-black text-emerald-600 dark:text-[#34D399]">{formatCurrency(dashboardMetrics.totalAdvancesDisbursed)}</p>
+											<p className="text-[10px] text-rose-500 dark:text-[#F87171] font-semibold">Pending Recovery: {formatCurrency(dashboardMetrics.totalAdvancePending)}</p>
 										</div>
 									</div>
 
 									{/* RAB Work Order Portfolio Table */}
-									<div className="bg-white dark:bg-[#232333] border border-slate-200/80 dark:border-[#32344d] rounded-2xl shadow-sm overflow-hidden">
-										<div className="p-5 border-b border-slate-200 dark:border-[#32344d] flex justify-between items-center">
+									<div className="bg-white dark:bg-[#111A30] border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden backdrop-blur-md">
+										<div className="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
 											<div>
 												<h3 className="font-bold text-base text-slate-900 dark:text-slate-100">RAB Work Orders Portfolio</h3>
-												<p className="text-xs text-slate-500 dark:text-[#8f93a7]">Click any row to inspect complete contract details & connected RA Bills</p>
+												<p className="text-xs text-slate-500 dark:text-slate-400">Click any row to inspect complete contract details & connected RA Bills</p>
 											</div>
 											<button
 												onClick={() => setIsCreatingWO(true)}
-												className="px-3.5 py-1.5 bg-indigo-600 dark:bg-[#7367f0] hover:bg-indigo-700 dark:hover:bg-[#685dd8] text-white text-xs font-semibold rounded-xl shadow-xs transition flex items-center gap-1.5"
+												className="px-3.5 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-medium rounded-xl shadow-md shadow-cyan-900/40 hover:shadow-cyan-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center gap-1.5 cursor-pointer"
 											>
 												<Plus size={14} /> New Work Order
 											</button>
@@ -556,7 +588,7 @@ export function PortalApp() {
 
 										<div className="overflow-x-auto">
 											<table className="w-full text-left text-xs">
-												<thead className="bg-slate-100 dark:bg-[#1e1e2d] text-slate-600 dark:text-[#8f93a7] uppercase font-bold border-b border-slate-200 dark:border-[#32344d]">
+												<thead className="bg-slate-100 dark:bg-[#0E1726] text-slate-600 dark:text-slate-400 uppercase font-semibold text-xs tracking-wider border-b border-slate-200 dark:border-slate-800">
 													<tr>
 														<th className="p-4">WO Series ID</th>
 														<th className="p-4">Project</th>
@@ -569,14 +601,14 @@ export function PortalApp() {
 														<th className="p-4 text-center">Action</th>
 													</tr>
 												</thead>
-												<tbody className="divide-y divide-slate-200/80 dark:divide-[#2d2d3f]">
+												<tbody className="divide-y divide-slate-200/80 dark:divide-slate-800/60">
 													{isLoadingWO ? (
 														<tr>
-															<td colSpan={9} className="p-12 text-center text-slate-400 dark:text-[#8f93a7]">Loading Work Orders...</td>
+															<td colSpan={9} className="p-12 text-center text-slate-400 dark:text-slate-400">Loading Work Orders...</td>
 														</tr>
 													) : workOrders?.length === 0 ? (
 														<tr>
-															<td colSpan={9} className="p-12 text-center text-slate-400 dark:text-[#8f93a7]">No Work Orders found.</td>
+															<td colSpan={9} className="p-12 text-center text-slate-400 dark:text-slate-400">No Work Orders found.</td>
 														</tr>
 													) : (
 														workOrders?.map((wo) => {
@@ -593,30 +625,30 @@ export function PortalApp() {
 																<tr
 																	key={wo.name}
 																	onClick={() => setSelectedWO(wo.name)}
-																	className="hover:bg-slate-50/80 dark:hover:bg-[#1e1e2d]/70 transition cursor-pointer group"
+																	className="border-b border-slate-100 dark:border-slate-800/60 hover:bg-cyan-500/5 hover:border-l-2 hover:border-l-cyan-400 transition-all duration-150 cursor-pointer group"
 																>
-																	<td className="p-4 font-mono font-bold text-indigo-600 dark:text-[#7367f0] group-hover:underline">
+																	<td className="p-4 font-mono font-bold text-cyan-600 dark:text-cyan-400 group-hover:underline">
 																		{wo.name}
 																	</td>
 																	<td className="p-4 font-medium text-slate-900 dark:text-slate-100">{wo.project}</td>
 																	<td className="p-4">
 																		<div className="flex flex-col">
 																			<span className="font-semibold text-slate-800 dark:text-slate-200">{wo.customer || wo.supplier || "-"}</span>
-																			<span className="text-[10px] text-slate-400 dark:text-[#8f93a7] font-semibold">{wo.boq_type}</span>
+																			<span className="text-[10px] text-slate-400 dark:text-slate-400 font-semibold">{wo.boq_type}</span>
 																		</div>
 																	</td>
 																	<td className="p-4 text-right font-bold text-slate-900 dark:text-slate-100">
 																		{formatCurrency(contractVal)}
 																	</td>
 																	<td className="p-4 text-center">
-																		<span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 dark:bg-[#7367f0]/15 text-indigo-600 dark:text-[#7367f0] border border-indigo-200 dark:border-[#7367f0]/30">
+																		<span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
 																			{woInfo.count} Bill(s)
 																		</span>
 																	</td>
-																	<td className="p-4 text-right font-semibold text-amber-600 dark:text-[#ff9f43]">
+																	<td className="p-4 text-right font-semibold text-amber-600 dark:text-amber-400">
 																		{formatCurrency(pendingBalance)}
 																	</td>
-																	<td className="p-4 text-right font-semibold text-emerald-600 dark:text-[#28c76f]">
+																	<td className="p-4 text-right font-semibold text-emerald-600 dark:text-emerald-400">
 																		{formatCurrency(activeAdv)}
 																	</td>
 																	<td className="p-4">{getStatusBadge(wo.status || "Active")}</td>
@@ -626,7 +658,7 @@ export function PortalApp() {
 																				e.stopPropagation();
 																				setSelectedWO(wo.name);
 																			}}
-																			className="p-1.5 bg-slate-100 dark:bg-[#1e1e2d] hover:bg-indigo-50 dark:hover:bg-[#7367f0]/20 text-slate-500 dark:text-[#8f93a7] hover:text-indigo-600 dark:hover:text-[#7367f0] rounded-lg transition"
+																			className="p-1.5 text-slate-400 hover:text-cyan-400 hover:scale-110 hover:bg-cyan-500/10 rounded-lg transition-transform duration-200 cursor-pointer"
 																		>
 																			<Eye size={16} />
 																		</button>
@@ -652,16 +684,16 @@ export function PortalApp() {
 
 							{/* RA BILLS FULL TAB */}
 							{activeTab === "ra_bill" && (
-								<div className="bg-white dark:bg-[#232333] border border-slate-200/80 dark:border-[#32344d] rounded-2xl shadow-sm overflow-hidden">
-									<div className="p-5 border-b border-slate-200 dark:border-[#32344d] flex justify-between items-center">
+								<div className="bg-white dark:bg-[#111A30] border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden backdrop-blur-md">
+									<div className="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
 										<div>
 											<h3 className="font-bold text-base text-slate-900 dark:text-slate-100">All Running Account (RA) Bills</h3>
-											<p className="text-xs text-slate-500 dark:text-[#8f93a7]">Valuation & Billing Records</p>
+											<p className="text-xs text-slate-500 dark:text-slate-400">Valuation & Billing Records</p>
 										</div>
 									</div>
 									<div className="overflow-x-auto">
 										<table className="w-full text-left text-xs">
-											<thead className="bg-slate-100 dark:bg-[#1e1e2d] text-slate-600 dark:text-[#8f93a7] uppercase font-bold border-b border-slate-200 dark:border-[#32344d]">
+											<thead className="bg-slate-100 dark:bg-[#0E1726] text-slate-600 dark:text-slate-400 uppercase font-semibold text-xs tracking-wider border-b border-slate-200 dark:border-slate-800">
 												<tr>
 													<th className="p-4">Bill ID</th>
 													<th className="p-4">RA No.</th>
@@ -674,14 +706,14 @@ export function PortalApp() {
 													<th className="p-4 text-center">Action</th>
 												</tr>
 											</thead>
-											<tbody className="divide-y divide-slate-200/80 dark:divide-[#2d2d3f]">
+											<tbody className="divide-y divide-slate-200/80 dark:divide-slate-800/60">
 												{raBills?.map((row) => (
-													<tr key={row.name} className="hover:bg-slate-50/80 dark:hover:bg-[#1e1e2d]/70 transition">
-														<td className="p-4 font-mono font-bold text-indigo-600 dark:text-[#7367f0]">{row.name}</td>
+													<tr key={row.name} onClick={() => setSelectedBill(row.name)} className="border-b border-slate-100 dark:border-slate-800/60 hover:bg-cyan-500/5 hover:border-l-2 hover:border-l-cyan-400 transition-all duration-150 cursor-pointer group">
+														<td className="p-4 font-mono font-bold text-cyan-600 dark:text-cyan-400 group-hover:underline">{row.name}</td>
 														<td className="p-4 font-semibold text-slate-700 dark:text-slate-200">RA #{row.ra_bill_no || "-"}</td>
 														<td className="p-4 font-medium text-slate-900 dark:text-slate-100">{row.project}</td>
-														<td className="p-4 font-mono text-slate-500 dark:text-[#8f93a7]">{row.boq}</td>
-														<td className="p-4 text-slate-500 dark:text-[#8f93a7]">{row.posting_date}</td>
+														<td className="p-4 font-mono text-slate-500 dark:text-slate-400">{row.boq}</td>
+														<td className="p-4 text-slate-500 dark:text-slate-400">{row.posting_date}</td>
 														<td className="p-4 text-right font-medium text-slate-800 dark:text-slate-200">
 															{formatCurrency(row.gross_work_value)}
 														</td>
@@ -691,8 +723,11 @@ export function PortalApp() {
 														<td className="p-4">{getStatusBadge(row.docstatus)}</td>
 														<td className="p-4 text-center">
 															<button
-																onClick={() => setSelectedBill(row.name)}
-																className="p-1.5 bg-slate-100 dark:bg-[#1e1e2d] hover:bg-indigo-50 dark:hover:bg-[#7367f0]/20 text-slate-500 dark:text-[#8f93a7] hover:text-indigo-600 dark:hover:text-[#7367f0] rounded-lg transition"
+																onClick={(e) => {
+																	e.stopPropagation();
+																	setSelectedBill(row.name);
+																}}
+																className="p-1.5 text-slate-400 hover:text-cyan-400 hover:scale-110 hover:bg-cyan-500/10 rounded-lg transition-transform duration-200 cursor-pointer"
 															>
 																<Eye size={16} />
 															</button>
@@ -732,12 +767,12 @@ export function PortalApp() {
 
 							{/* SETTINGS VIEW */}
 							{activeTab === "settings" && (
-								<div className="bg-white dark:bg-[#232333] p-6 rounded-2xl border border-slate-200/80 dark:border-[#32344d] shadow-sm space-y-4">
+								<div className="bg-white dark:bg-[#111A30] p-6 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4 backdrop-blur-md">
 									<h3 className="text-base font-bold text-slate-900 dark:text-slate-100">RA Bill System Configuration</h3>
-									<p className="text-xs text-slate-500 dark:text-[#8f93a7]">
-										Frappe site connection: <span className="font-mono text-indigo-600 dark:text-[#7367f0] font-bold">frappe.local</span>
+									<p className="text-xs text-slate-500 dark:text-slate-400">
+										Frappe site connection: <span className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">frappe.local</span>
 									</p>
-									<div className="p-4 bg-slate-50 dark:bg-[#1e1e2d] rounded-xl border border-slate-200 dark:border-[#2d2d3f] text-xs space-y-2 text-slate-700 dark:text-slate-300">
+									<div className="p-4 bg-slate-50 dark:bg-[#0E1726] rounded-xl border border-slate-200 dark:border-slate-800 text-xs space-y-2 text-slate-700 dark:text-slate-300">
 										<p><strong>App Name:</strong> TRIDASA RA Valuation Suite</p>
 										<p><strong>Version:</strong> 1.0.0 (Production-Grade Dual Theme)</p>
 										<p><strong>Active User:</strong> {currentUser || "Administrator"}</p>
@@ -1223,7 +1258,7 @@ function RABWorkOrderDetail({
 				<div className="flex items-center gap-4">
 					<button
 						onClick={onBack}
-						className="p-2.5 bg-slate-100 dark:bg-[#1e1e2d] hover:bg-slate-200 dark:hover:bg-[#282a42] text-slate-700 dark:text-slate-200 rounded-xl border border-slate-200 dark:border-[#32344d] transition flex items-center gap-2 text-xs font-semibold"
+						className="p-2.5 bg-slate-100 dark:bg-[#0E1726] hover:bg-slate-200 dark:hover:bg-[#16223F] text-slate-700 dark:text-slate-200 rounded-xl border border-slate-200 dark:border-slate-800 transition flex items-center gap-2 text-xs font-semibold cursor-pointer"
 					>
 						<ArrowLeft size={16} />
 						<span>Back to Dashboard</span>
@@ -1231,11 +1266,11 @@ function RABWorkOrderDetail({
 					<div>
 						<div className="flex items-center gap-2.5">
 							<h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{wo.name}</h2>
-							<span className="text-xs font-bold bg-indigo-50 dark:bg-[#7367f0]/20 text-indigo-600 dark:text-[#7367f0] px-3 py-0.5 rounded-full border border-indigo-200 dark:border-[#7367f0]/30">
+							<span className="text-xs font-bold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 px-3 py-0.5 rounded-full border border-cyan-500/30">
 								{wo.project || "No Project Linked"}
 							</span>
 						</div>
-						<p className="text-xs text-slate-500 dark:text-[#8f93a7] mt-0.5">
+						<p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
 							Type: <span className="font-semibold text-slate-800 dark:text-slate-200">{wo.boq_type}</span> | Party:{" "}
 							<span className="font-semibold text-slate-800 dark:text-slate-200">{wo.customer || wo.supplier || "-"}</span>
 						</p>
@@ -1244,8 +1279,8 @@ function RABWorkOrderDetail({
 
 				<div className="flex items-center gap-3">
 					<span className={`px-3.5 py-1 text-xs font-bold rounded-full border ${wo.docstatus === 0 || wo.status === "Draft"
-							? "bg-amber-500/15 text-amber-600 border-amber-500/30"
-							: "bg-emerald-500/15 text-emerald-600 dark:text-[#28c76f] border-emerald-500/30"
+							? "bg-amber-500/10 text-amber-500 dark:text-amber-400 border-amber-500/30"
+							: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
 						}`}>
 						{wo.status || (wo.docstatus === 0 ? "Draft" : "Submitted")}
 					</span>
@@ -1255,7 +1290,7 @@ function RABWorkOrderDetail({
 						<button
 							onClick={handleSubmitWO}
 							disabled={isSubmitting}
-							className="px-4 py-2 bg-emerald-600 dark:bg-[#28c76f] hover:bg-emerald-700 dark:hover:bg-[#24b263] text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
+							className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-medium rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
 						>
 							<CheckCircle2 size={16} />
 							<span>{isSubmitting ? "Submitting..." : "Submit Work Order"}</span>
@@ -1267,7 +1302,7 @@ function RABWorkOrderDetail({
 						<button
 							onClick={handleCreateRABill}
 							disabled={isCreatingBill}
-							className="px-4 py-2 bg-indigo-600 dark:bg-[#7367f0] hover:bg-indigo-700 dark:hover:bg-[#685dd8] text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
+							className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-medium rounded-xl shadow-md shadow-cyan-900/40 hover:shadow-cyan-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center gap-1.5 cursor-pointer"
 						>
 							<Receipt size={16} />
 							<span>{isCreatingBill ? "Creating..." : "+ Create RA Bill"}</span>
@@ -1277,7 +1312,7 @@ function RABWorkOrderDetail({
 					{/* Create Advance Button */}
 					<button
 						onClick={() => setShowAdvanceDialog(true)}
-						className="px-4 py-2 bg-slate-100 dark:bg-[#1e1e2d] hover:bg-slate-200 dark:hover:bg-[#282a42] text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-[#32344d] transition flex items-center gap-1.5 cursor-pointer"
+						className="px-4 py-2 bg-slate-100 dark:bg-[#0E1726] hover:bg-slate-200 dark:hover:bg-[#16223F] text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 transition flex items-center gap-1.5 cursor-pointer"
 					>
 						<Plus size={16} />
 						<span>Create Advance</span>
@@ -1287,33 +1322,33 @@ function RABWorkOrderDetail({
 
 			{/* Quick Financial Summary Cards */}
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-				<div className="bg-white dark:bg-[#232333] p-4 rounded-2xl border border-slate-200/80 dark:border-[#32344d]">
-					<p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#8f93a7]">Contract Value</p>
+				<div className="bg-white dark:bg-[#111A30] p-4 rounded-xl border border-slate-200/80 dark:border-white/[0.07] backdrop-blur-md">
+					<p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">Contract Value</p>
 					<p className="text-lg font-extrabold text-slate-900 dark:text-slate-100 mt-1">{formatCurrency(contractVal)}</p>
 				</div>
-				<div className="bg-white dark:bg-[#232333] p-4 rounded-2xl border border-slate-200/80 dark:border-[#32344d]">
-					<p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#8f93a7]">Total Billed to Date</p>
-					<p className="text-lg font-extrabold text-indigo-600 dark:text-[#7367f0] mt-1">{formatCurrency(totalBilled)}</p>
+				<div className="bg-white dark:bg-[#111A30] p-4 rounded-xl border border-slate-200/80 dark:border-white/[0.07] backdrop-blur-md">
+					<p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">Total Billed to Date</p>
+					<p className="text-lg font-extrabold text-cyan-600 dark:text-cyan-400 mt-1">{formatCurrency(totalBilled)}</p>
 				</div>
-				<div className="bg-white dark:bg-[#232333] p-4 rounded-2xl border border-slate-200/80 dark:border-[#32344d]">
+				<div className="bg-white dark:bg-[#111A30] p-4 rounded-xl border border-slate-200/80 dark:border-white/[0.07] backdrop-blur-md">
 					<p className="text-[10px] font-bold uppercase tracking-wider text-amber-500">Balance Pending</p>
-					<p className="text-lg font-extrabold text-amber-600 dark:text-[#ff9f43] mt-1">{formatCurrency(pendingBalance)}</p>
+					<p className="text-lg font-extrabold text-amber-600 dark:text-amber-400 mt-1">{formatCurrency(pendingBalance)}</p>
 				</div>
-				<div className="bg-white dark:bg-[#232333] p-4 rounded-2xl border border-slate-200/80 dark:border-[#32344d]">
-					<p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#8f93a7]">Connected RA Bills</p>
+				<div className="bg-white dark:bg-[#111A30] p-4 rounded-xl border border-slate-200/80 dark:border-white/[0.07] backdrop-blur-md">
+					<p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">Connected RA Bills</p>
 					<p className="text-lg font-extrabold text-slate-900 dark:text-slate-100 mt-1">{connectedBills?.length || 0} Bills</p>
 				</div>
-				<div className="bg-white dark:bg-[#232333] p-4 rounded-2xl border border-slate-200/80 dark:border-[#32344d]">
+				<div className="bg-white dark:bg-[#111A30] p-4 rounded-xl border border-slate-200/80 dark:border-white/[0.07] backdrop-blur-md">
 					<p className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Advances Disbursed</p>
-					<p className="text-lg font-extrabold text-emerald-600 dark:text-[#28c76f] mt-1">{formatCurrency(totalAdvDisbursed)}</p>
+					<p className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">{formatCurrency(totalAdvDisbursed)}</p>
 				</div>
 			</div>
 
 			{/* Clean Info Box when Work Order is fully billed (Issue 4) */}
 			{createBillInfoMessage && (
-				<div className="p-4 bg-sky-50 dark:bg-[#1e1e2d] border border-sky-200 dark:border-[#32344d] rounded-2xl flex items-center justify-between text-xs text-slate-800 dark:text-slate-200 shadow-sm transition-all">
+				<div className="p-4 bg-cyan-50 dark:bg-[#0E1726] border border-cyan-200 dark:border-slate-800 rounded-xl flex items-center justify-between text-xs text-slate-800 dark:text-slate-200 shadow-sm transition-all">
 					<div className="flex items-center gap-2.5">
-						<Info size={18} className="text-indigo-600 dark:text-[#7367f0] shrink-0" />
+						<Info size={18} className="text-cyan-600 dark:text-cyan-400 shrink-0" />
 						<span className="font-semibold">{createBillInfoMessage}</span>
 					</div>
 					<button
@@ -1327,20 +1362,20 @@ function RABWorkOrderDetail({
 			)}
 
 			{/* Section 1: Connected RA Bills (Interactive Drill-down Table) */}
-			<div className="bg-white dark:bg-[#232333] border border-slate-200/80 dark:border-[#32344d] rounded-2xl shadow-sm overflow-hidden space-y-0">
-				<div className="p-5 border-b border-slate-200 dark:border-[#32344d] flex justify-between items-center">
+			<div className="bg-white dark:bg-[#111A30] border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden space-y-0 backdrop-blur-md">
+				<div className="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
 					<div>
 						<h3 className="font-bold text-base text-slate-900 dark:text-slate-100">Connected RA Bills</h3>
-						<p className="text-xs text-slate-500 dark:text-[#8f93a7]">Click any RA Bill row to inspect line items, deductions, and payment details</p>
+						<p className="text-xs text-slate-500 dark:text-slate-400">Click any RA Bill row to inspect line items, deductions, and payment details</p>
 					</div>
-					<span className="text-xs font-bold bg-indigo-50 dark:bg-[#7367f0]/15 text-indigo-600 dark:text-[#7367f0] px-3 py-1 rounded-full border border-indigo-200 dark:border-[#7367f0]/30">
+					<span className="text-xs font-bold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 px-3 py-1 rounded-full border border-cyan-500/30">
 						{connectedBills?.length || 0} Submitted Bill(s)
 					</span>
 				</div>
 
 				<div className="overflow-x-auto">
 					<table className="w-full text-left text-xs">
-						<thead className="bg-slate-100 dark:bg-[#1e1e2d] text-slate-600 dark:text-[#8f93a7] uppercase font-bold border-b border-slate-200 dark:border-[#32344d]">
+						<thead className="bg-slate-100 dark:bg-[#0E1726] text-slate-600 dark:text-slate-400 uppercase font-semibold text-xs tracking-wider border-b border-slate-200 dark:border-slate-800">
 							<tr>
 								<th className="p-3.5">Bill ID</th>
 								<th className="p-3.5">RA Bill No</th>
@@ -1351,33 +1386,34 @@ function RABWorkOrderDetail({
 								<th className="p-3.5 text-center">Action</th>
 							</tr>
 						</thead>
-						<tbody className="divide-y divide-slate-200/80 dark:divide-[#2d2d3f]">
+						<tbody className="divide-y divide-slate-200/80 dark:divide-slate-800/60">
 							{isLoadingBills ? (
-								<tr><td colSpan={7} className="p-8 text-center text-slate-400 dark:text-[#8f93a7]">Loading connected bills...</td></tr>
+								<tr><td colSpan={7} className="p-8 text-center text-slate-400 dark:text-slate-400">Loading connected bills...</td></tr>
 							) : connectedBills?.length === 0 ? (
-								<tr><td colSpan={7} className="p-8 text-center text-slate-400 dark:text-[#8f93a7]">No RA Bills filed for this Work Order yet.</td></tr>
+								<tr><td colSpan={7} className="p-8 text-center text-slate-400 dark:text-slate-400">No RA Bills filed for this Work Order yet.</td></tr>
 							) : (
 								connectedBills?.map((bill) => (
 									<tr
 										key={bill.name}
 										onClick={() => onSelectBill(bill.name)}
-										className="hover:bg-slate-50/80 dark:hover:bg-[#1e1e2d]/70 transition cursor-pointer group"
+										className="border-b border-slate-100 dark:border-slate-800/60 hover:bg-cyan-500/5 hover:border-l-2 hover:border-l-cyan-400 transition-all duration-150 cursor-pointer group"
 									>
-										<td className="p-3.5 font-mono font-bold text-indigo-600 dark:text-[#7367f0] group-hover:underline">
+										<td className="p-3.5 font-mono font-bold text-cyan-600 dark:text-cyan-400 group-hover:underline">
 											{bill.name}
 										</td>
 										<td className="p-3.5 font-semibold text-slate-800 dark:text-slate-200">
 											RA #{bill.ra_bill_no || "-"}
 										</td>
-										<td className="p-3.5 text-slate-600 dark:text-[#8f93a7]">{bill.posting_date}</td>
+										<td className="p-3.5 text-slate-600 dark:text-slate-400">{bill.posting_date}</td>
 										<td className="p-3.5 text-right font-medium text-slate-900 dark:text-slate-100">
 											{formatCurrency(bill.gross_work_value)}
 										</td>
-										<td className="p-3.5 text-right font-bold text-indigo-600 dark:text-[#7367f0]">
+										<td className="p-3.5 text-right font-bold text-cyan-600 dark:text-cyan-400">
 											{formatCurrency(bill.net_payable)}
 										</td>
 										<td className="p-3.5">
-											<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-[#28c76f]">
+											<span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30">
+												<span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
 												Submitted
 											</span>
 										</td>
@@ -1387,7 +1423,7 @@ function RABWorkOrderDetail({
 													e.stopPropagation();
 													onSelectBill(bill.name);
 												}}
-												className="p-1.5 bg-slate-100 dark:bg-[#1e1e2d] hover:bg-indigo-50 dark:hover:bg-[#7367f0]/20 text-slate-500 dark:text-[#8f93a7] hover:text-indigo-600 dark:hover:text-[#7367f0] rounded-lg transition"
+												className="p-1.5 text-slate-400 hover:text-cyan-400 hover:scale-110 hover:bg-cyan-500/10 rounded-lg transition-transform duration-200 cursor-pointer"
 											>
 												<Eye size={16} />
 											</button>
@@ -1401,35 +1437,35 @@ function RABWorkOrderDetail({
 			</div>
 
 			{/* Section 2: General Information (2-Column Grid) */}
-			<div className="bg-white dark:bg-[#232333] border border-slate-200/80 dark:border-[#32344d] rounded-2xl p-6 shadow-sm space-y-4">
-				<h3 className="font-bold text-base text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-[#32344d] pb-3">General Information</h3>
+			<div className="bg-white dark:bg-[#111A30] border border-slate-200/80 dark:border-slate-800 rounded-xl p-6 shadow-sm space-y-4 backdrop-blur-md">
+				<h3 className="font-bold text-base text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-800 pb-3">General Information</h3>
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
 					<div className="space-y-3">
-						<div className="flex justify-between border-b border-slate-100 dark:border-[#2d2d3f] pb-2">
-							<span className="text-slate-500 dark:text-[#8f93a7]">Project:</span>
+						<div className="flex justify-between border-b border-slate-100 dark:border-slate-800/60 pb-2">
+							<span className="text-slate-500 dark:text-slate-400">Project:</span>
 							<span className="font-semibold text-slate-900 dark:text-slate-100">{wo.project || "-"}</span>
 						</div>
-						<div className="flex justify-between border-b border-slate-100 dark:border-[#2d2d3f] pb-2">
-							<span className="text-slate-500 dark:text-[#8f93a7]">BOQ Type:</span>
-							<span className="font-semibold text-indigo-600 dark:text-[#7367f0]">{wo.boq_type}</span>
+						<div className="flex justify-between border-b border-slate-100 dark:border-slate-800/60 pb-2">
+							<span className="text-slate-500 dark:text-slate-400">BOQ Type:</span>
+							<span className="font-semibold text-cyan-600 dark:text-cyan-400">{wo.boq_type}</span>
 						</div>
-						<div className="flex justify-between border-b border-slate-100 dark:border-[#2d2d3f] pb-2">
-							<span className="text-slate-500 dark:text-[#8f93a7]">Party (Customer / Supplier):</span>
+						<div className="flex justify-between border-b border-slate-100 dark:border-slate-800/60 pb-2">
+							<span className="text-slate-500 dark:text-slate-400">Party (Customer / Supplier):</span>
 							<span className="font-semibold text-slate-900 dark:text-slate-100">{wo.customer || wo.supplier || "-"}</span>
 						</div>
 					</div>
 
 					<div className="space-y-3">
-						<div className="flex justify-between border-b border-slate-100 dark:border-[#2d2d3f] pb-2">
-							<span className="text-slate-500 dark:text-[#8f93a7]">Company:</span>
+						<div className="flex justify-between border-b border-slate-100 dark:border-slate-800/60 pb-2">
+							<span className="text-slate-500 dark:text-slate-400">Company:</span>
 							<span className="font-semibold text-slate-900 dark:text-slate-100">{wo.company || "Tridasa"}</span>
 						</div>
-						<div className="flex justify-between border-b border-slate-100 dark:border-[#2d2d3f] pb-2">
-							<span className="text-slate-500 dark:text-[#8f93a7]">Billing Method:</span>
+						<div className="flex justify-between border-b border-slate-100 dark:border-slate-800/60 pb-2">
+							<span className="text-slate-500 dark:text-slate-400">Billing Method:</span>
 							<span className="font-semibold text-slate-900 dark:text-slate-100">{wo.billing_method || "Item Rate"}</span>
 						</div>
-						<div className="flex justify-between border-b border-slate-100 dark:border-[#2d2d3f] pb-2">
-							<span className="text-slate-500 dark:text-[#8f93a7]">Defect Liability Period:</span>
+						<div className="flex justify-between border-b border-slate-100 dark:border-slate-800/60 pb-2">
+							<span className="text-slate-500 dark:text-slate-400">Defect Liability Period:</span>
 							<span className="font-semibold text-slate-900 dark:text-slate-100">{wo.defect_liability_period_days || 365} Days</span>
 						</div>
 						<div className="flex justify-between items-center border-b border-slate-100 dark:border-[#2d2d3f] pb-2">
@@ -1485,16 +1521,16 @@ function RABWorkOrderDetail({
 			</div>
 
 			{/* Section 3: Schedule of Items (BOQ Items Table) */}
-			<div className="bg-white dark:bg-[#232333] border border-slate-200/80 dark:border-[#32344d] rounded-2xl overflow-hidden shadow-sm space-y-0">
-				<div className="p-5 border-b border-slate-200 dark:border-[#32344d] flex justify-between items-center">
+			<div className="bg-white dark:bg-[#111A30] border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm space-y-0 backdrop-blur-md">
+				<div className="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
 					<h3 className="font-bold text-base text-slate-900 dark:text-slate-100">Schedule of Items (BOQ Items)</h3>
-					<span className="text-xs text-slate-500 dark:text-[#8f93a7]">
+					<span className="text-xs text-slate-500 dark:text-slate-400">
 						{wo.items?.length || 0} Item Row(s)
 					</span>
 				</div>
 				<div className="overflow-x-auto">
 					<table className="w-full text-left text-xs">
-						<thead className="bg-slate-100 dark:bg-[#1e1e2d] text-slate-600 dark:text-[#8f93a7] uppercase font-bold border-b border-slate-200 dark:border-[#32344d]">
+						<thead className="bg-slate-100 dark:bg-[#0E1726] text-slate-600 dark:text-slate-400 uppercase font-semibold text-xs tracking-wider border-b border-slate-200 dark:border-slate-800">
 							<tr>
 								<th className="p-4">No.</th>
 								<th className="p-4">Item Code</th>
@@ -1505,11 +1541,11 @@ function RABWorkOrderDetail({
 								<th className="p-4 text-right">Amount</th>
 							</tr>
 						</thead>
-						<tbody className="divide-y divide-slate-200/80 dark:divide-[#2d2d3f]">
+						<tbody className="divide-y divide-slate-200/80 dark:divide-slate-800/60">
 							{wo.items?.map((item: any, idx: number) => (
-								<tr key={idx} className="hover:bg-slate-50/80 dark:hover:bg-[#1e1e2d]/70 transition">
-									<td className="p-4 text-slate-400 dark:text-[#8f93a7]">{idx + 1}</td>
-									<td className="p-4 font-mono font-bold text-indigo-600 dark:text-[#7367f0]">{item.item_code || "-"}</td>
+								<tr key={idx} className="border-b border-slate-100 dark:border-slate-800/60 hover:bg-cyan-500/5 hover:border-l-2 hover:border-l-cyan-400 transition-all duration-150">
+									<td className="p-4 text-slate-400 dark:text-slate-400">{idx + 1}</td>
+									<td className="p-4 font-mono font-bold text-cyan-600 dark:text-cyan-400">{item.item_code || "-"}</td>
 									<td className="p-4 text-slate-800 dark:text-slate-200 max-w-xs truncate">{item.description || "-"}</td>
 									<td className="p-4 text-slate-600 dark:text-slate-300 font-mono">{item.uom || "-"}</td>
 									<td className="p-4 text-right font-medium text-slate-800 dark:text-slate-200 font-mono">{item.boq_qty ?? item.qty ?? 0}</td>
@@ -1520,22 +1556,22 @@ function RABWorkOrderDetail({
 						</tbody>
 					</table>
 				</div>
-				<div className="p-4 bg-slate-50 dark:bg-[#1e1e2d] border-t border-slate-200 dark:border-[#32344d] flex justify-between items-center text-xs">
-					<span className="font-bold text-slate-500 dark:text-[#8f93a7] uppercase tracking-wider">Total Schedule Amount</span>
-					<span className="text-base font-black text-indigo-600 dark:text-[#7367f0]">{formatCurrency(wo.total_boq_amount)}</span>
+				<div className="p-4 bg-slate-50 dark:bg-[#0E1726] border-t border-slate-200 dark:border-slate-800 flex justify-between items-center text-xs">
+					<span className="font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Schedule Amount</span>
+					<span className="text-base font-black text-cyan-600 dark:text-cyan-400">{formatCurrency(wo.total_boq_amount)}</span>
 				</div>
 			</div>
 
 			{/* Section 4 & 5: Additions & Deductions Tables */}
 			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 				{/* Additions Table */}
-				<div className="bg-white dark:bg-[#232333] border border-slate-200/80 dark:border-[#32344d] rounded-2xl p-5 shadow-sm space-y-3">
-					<h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-[#32344d] pb-2">
+				<div className="bg-white dark:bg-[#111A30] border border-slate-200/80 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-3 backdrop-blur-md">
+					<h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-800 pb-2">
 						Contract Additions
 					</h4>
 					{wo.additions && wo.additions.length > 0 ? (
 						<table className="w-full text-left text-xs">
-							<thead className="bg-slate-100 dark:bg-[#1e1e2d] text-slate-600 dark:text-[#8f93a7] font-bold border-b border-slate-200 dark:border-[#32344d]">
+							<thead className="bg-slate-100 dark:bg-[#0E1726] text-slate-600 dark:text-slate-400 uppercase font-semibold text-xs tracking-wider border-b border-slate-200 dark:border-slate-800">
 								<tr>
 									<th className="p-2">Type</th>
 									<th className="p-2">Method</th>
@@ -1543,30 +1579,30 @@ function RABWorkOrderDetail({
 									<th className="p-2 text-right">Amount</th>
 								</tr>
 							</thead>
-							<tbody className="divide-y divide-slate-200 dark:divide-[#2d2d3f]">
+							<tbody className="divide-y divide-slate-200/80 dark:divide-slate-800/60">
 								{wo.additions.map((a: any, idx: number) => (
-									<tr key={idx}>
+									<tr key={idx} className="border-b border-slate-100 dark:border-slate-800/60">
 										<td className="p-2 font-semibold text-slate-900 dark:text-slate-100">{a.addition_type}</td>
-										<td className="p-2 text-slate-500">{a.calculation_method}</td>
+										<td className="p-2 text-slate-500 dark:text-slate-400">{a.calculation_method}</td>
 										<td className="p-2 text-right font-mono">{a.rate}%</td>
-										<td className="p-2 text-right font-bold text-emerald-600">{formatCurrency(a.amount)}</td>
+										<td className="p-2 text-right font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(a.amount)}</td>
 									</tr>
 								))}
 							</tbody>
 						</table>
 					) : (
-						<p className="text-xs text-slate-400 dark:text-[#8f93a7] py-4 text-center">No contractual additions configured.</p>
+						<p className="text-xs text-slate-400 dark:text-slate-400 py-4 text-center">No contractual additions configured.</p>
 					)}
 				</div>
 
 				{/* Deductions Table */}
-				<div className="bg-white dark:bg-[#232333] border border-slate-200/80 dark:border-[#32344d] rounded-2xl p-5 shadow-sm space-y-3">
-					<h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-[#32344d] pb-2">
+				<div className="bg-white dark:bg-[#111A30] border border-slate-200/80 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-3 backdrop-blur-md">
+					<h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-800 pb-2">
 						Contract Deductions & Recoveries
 					</h4>
 					{wo.deductions && wo.deductions.length > 0 ? (
 						<table className="w-full text-left text-xs">
-							<thead className="bg-slate-100 dark:bg-[#1e1e2d] text-slate-600 dark:text-[#8f93a7] font-bold border-b border-slate-200 dark:border-[#32344d]">
+							<thead className="bg-slate-100 dark:bg-[#0E1726] text-slate-600 dark:text-slate-400 uppercase font-semibold text-xs tracking-wider border-b border-slate-200 dark:border-slate-800">
 								<tr>
 									<th className="p-2">Deduction Type</th>
 									<th className="p-2">Method</th>
@@ -1574,37 +1610,37 @@ function RABWorkOrderDetail({
 									<th className="p-2 text-right">Amount</th>
 								</tr>
 							</thead>
-							<tbody className="divide-y divide-slate-200 dark:divide-[#2d2d3f]">
+							<tbody className="divide-y divide-slate-200/80 dark:divide-slate-800/60">
 								{wo.deductions.map((d: any, idx: number) => (
-									<tr key={idx}>
+									<tr key={idx} className="border-b border-slate-100 dark:border-slate-800/60">
 										<td className="p-2 font-semibold text-slate-900 dark:text-slate-100">{d.deduction_type}</td>
-										<td className="p-2 text-slate-500">{d.calculation_method}</td>
+										<td className="p-2 text-slate-500 dark:text-slate-400">{d.calculation_method}</td>
 										<td className="p-2 text-right font-mono">{d.rate}%</td>
-										<td className="p-2 text-right font-bold text-rose-600 dark:text-[#ea5455]">{formatCurrency(-d.amount)}</td>
+										<td className="p-2 text-right font-bold text-rose-600 dark:text-rose-400">{formatCurrency(-d.amount)}</td>
 									</tr>
 								))}
 							</tbody>
 						</table>
 					) : (
-						<p className="text-xs text-slate-400 dark:text-[#8f93a7] py-4 text-center">No contractual deductions configured.</p>
+						<p className="text-xs text-slate-400 dark:text-slate-400 py-4 text-center">No contractual deductions configured.</p>
 					)}
 				</div>
 			</div>
 
 			{/* Section 6: Contract Advances Table */}
-			<div className="bg-white dark:bg-[#232333] border border-slate-200/80 dark:border-[#32344d] rounded-2xl p-5 shadow-sm space-y-3">
-				<div className="flex justify-between items-center border-b border-slate-200 dark:border-[#32344d] pb-3">
+			<div className="bg-white dark:bg-[#111A30] border border-slate-200/80 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-3 backdrop-blur-md">
+				<div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
 					<div>
 						<h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
 							Contract Advances
 						</h4>
-						<p className="text-xs text-slate-500 dark:text-[#8f93a7]">
+						<p className="text-xs text-slate-500 dark:text-slate-400">
 							Mobilization, ad hoc, and other advances disbursed against this Work Order
 						</p>
 					</div>
 					<button
 						onClick={() => setShowAdvanceDialog(true)}
-						className="px-3 py-1.5 bg-indigo-600 dark:bg-[#7367f0] hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer"
+						className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer"
 					>
 						<Plus size={14} />
 						<span>Create Advance</span>
@@ -1614,7 +1650,7 @@ function RABWorkOrderDetail({
 				{wo.advances && wo.advances.length > 0 ? (
 					<div className="overflow-x-auto">
 						<table className="w-full text-left text-xs">
-							<thead className="bg-slate-100 dark:bg-[#1e1e2d] text-slate-600 dark:text-[#8f93a7] font-bold border-b border-slate-200 dark:border-[#32344d]">
+							<thead className="bg-slate-100 dark:bg-[#0E1726] text-slate-600 dark:text-slate-400 uppercase font-semibold text-xs tracking-wider border-b border-slate-200 dark:border-slate-800">
 								<tr>
 									<th className="p-2.5">No.</th>
 									<th className="p-2.5">Advance Type</th>
@@ -1624,21 +1660,21 @@ function RABWorkOrderDetail({
 									<th className="p-2.5 text-center">Action</th>
 								</tr>
 							</thead>
-							<tbody className="divide-y divide-slate-200 dark:divide-[#2d2d3f]">
+							<tbody className="divide-y divide-slate-200/80 dark:divide-slate-800/60">
 								{wo.advances.map((adv: any, idx: number) => {
 									const hasPE = !!adv.payment_entry;
 									const isCreatingThisPE = creatingPEForRow === idx;
 									return (
-										<tr key={idx} className="hover:bg-slate-50/80 dark:hover:bg-[#1e1e2d]/70 transition">
-											<td className="p-2.5 text-slate-400">{idx + 1}</td>
+										<tr key={idx} className="border-b border-slate-100 dark:border-slate-800/60 hover:bg-cyan-500/5 hover:border-l-2 hover:border-l-cyan-400 transition-all duration-150">
+											<td className="p-2.5 text-slate-400 dark:text-slate-400">{idx + 1}</td>
 											<td className="p-2.5 font-semibold text-slate-900 dark:text-slate-100">{adv.advance_type}</td>
-											<td className="p-2.5 text-slate-600 dark:text-[#8f93a7]">
+											<td className="p-2.5 text-slate-600 dark:text-slate-400">
 												{adv.advance_type === "Other" ? adv.description || "-" : "-"}
 											</td>
-											<td className="p-2.5 text-right font-bold text-emerald-600 dark:text-[#28c76f]">
+											<td className="p-2.5 text-right font-bold text-emerald-600 dark:text-emerald-400">
 												{formatCurrency(adv.amount)}
 											</td>
-											<td className="p-2.5 font-mono text-indigo-600 dark:text-[#7367f0]">
+											<td className="p-2.5 font-mono text-cyan-600 dark:text-cyan-400">
 												{adv.payment_entry || "-"}
 											</td>
 											<td className="p-2.5 text-center">
@@ -1646,7 +1682,7 @@ function RABWorkOrderDetail({
 													<button
 														onClick={() => handleOpenPEDialog(adv, idx)}
 														disabled={isCreatingThisPE}
-														className="px-3 py-1 bg-emerald-600 dark:bg-[#28c76f] hover:bg-emerald-700 dark:hover:bg-[#24b263] text-white text-[11px] font-semibold rounded-lg shadow-sm transition flex items-center gap-1 mx-auto cursor-pointer"
+														className="px-3 py-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-[11px] font-semibold rounded-lg shadow-sm transition flex items-center gap-1 mx-auto cursor-pointer"
 													>
 														<span>{isCreatingThisPE ? "Opening..." : "Create Payment Entry"}</span>
 													</button>
@@ -1669,16 +1705,16 @@ function RABWorkOrderDetail({
 
 			{/* Create Advance Modal Dialog */}
 			{showAdvanceDialog && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-					<div className="bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-5">
-						<div className="flex items-center justify-between border-b border-slate-200 dark:border-[#32344d] pb-3">
-							<h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+					<div className="bg-[#111A30] border border-white/[0.08] rounded-2xl w-full max-w-md p-6 shadow-2xl shadow-cyan-950/30 space-y-5 backdrop-blur-md">
+						<div className="flex items-center justify-between border-b border-slate-800 pb-3">
+							<h3 className="font-bold text-base text-slate-100">
 								Create Advance
 							</h3>
 							<button
 								type="button"
 								onClick={() => setShowAdvanceDialog(false)}
-								className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg transition"
+								className="text-slate-400 hover:text-slate-200 p-1 rounded-lg transition"
 							>
 								<X size={18} />
 							</button>
@@ -1686,13 +1722,13 @@ function RABWorkOrderDetail({
 
 						<form onSubmit={handleSaveAdvance} className="space-y-4 text-xs">
 							<div>
-								<label className="block text-slate-600 dark:text-[#8f93a7] font-semibold mb-1">
+								<label className="block text-slate-400 font-semibold mb-1">
 									Advance Type <span className="text-rose-500">*</span>
 								</label>
 								<select
 									value={advanceType}
 									onChange={(e) => setAdvanceType(e.target.value as any)}
-									className="w-full p-2.5 bg-slate-50 dark:bg-[#1e1e2d] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+									className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-200 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 								>
 									<option value="Mobilization Advance">Mobilization Advance</option>
 									<option value="Ad Hoc Advance">Ad Hoc Advance</option>
@@ -1702,7 +1738,7 @@ function RABWorkOrderDetail({
 
 							{advanceType === "Other" && (
 								<div>
-									<label className="block text-slate-600 dark:text-[#8f93a7] font-semibold mb-1">
+									<label className="block text-slate-400 font-semibold mb-1">
 										Description (Custom Name) <span className="text-rose-500">*</span>
 									</label>
 									<input
@@ -1711,13 +1747,13 @@ function RABWorkOrderDetail({
 										placeholder="e.g. Fuel Advance, Equipment Advance"
 										value={advanceDescription}
 										onChange={(e) => setAdvanceDescription(e.target.value)}
-										className="w-full p-2.5 bg-slate-50 dark:bg-[#1e1e2d] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+										className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-200 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 									/>
 								</div>
 							)}
 
 							<div>
-								<label className="block text-slate-600 dark:text-[#8f93a7] font-semibold mb-1">
+								<label className="block text-slate-400 font-semibold mb-1">
 									Amount (INR) <span className="text-rose-500">*</span>
 								</label>
 								<input
@@ -1728,23 +1764,23 @@ function RABWorkOrderDetail({
 									placeholder="0.00"
 									value={advanceAmount === 0 ? "" : advanceAmount}
 									onChange={(e) => setAdvanceAmount(e.target.value === "" ? "" : Number(e.target.value))}
-									className="w-full p-2.5 bg-slate-50 dark:bg-[#1e1e2d] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-800 dark:text-slate-200 font-mono text-right focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+									className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-200 font-mono text-right focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 								/>
 							</div>
 
-							<div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-[#32344d]">
+							<div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
 								<button
 									type="button"
 									onClick={() => setShowAdvanceDialog(false)}
 									disabled={isCreatingAdvance}
-									className="px-4 py-2 bg-slate-100 dark:bg-[#1e1e2d] hover:bg-slate-200 dark:hover:bg-[#282a42] text-slate-700 dark:text-slate-200 rounded-xl font-semibold transition cursor-pointer"
+									className="px-4 py-2 bg-[#0E1726] hover:bg-slate-800 text-slate-300 rounded-xl font-semibold transition cursor-pointer"
 								>
 									Cancel
 								</button>
 								<button
 									type="submit"
 									disabled={isCreatingAdvance}
-									className="px-4 py-2 bg-indigo-600 dark:bg-[#7367f0] hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md transition flex items-center gap-1.5 cursor-pointer"
+									className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl font-bold shadow-md shadow-cyan-900/40 hover:shadow-cyan-500/30 transition flex items-center gap-1.5 cursor-pointer"
 								>
 									<span>{isCreatingAdvance ? "Saving..." : "Save Advance"}</span>
 								</button>
@@ -1756,19 +1792,19 @@ function RABWorkOrderDetail({
 
 			{/* ── Payment Entry Creation Modal ── */}
 			{peDialogRow && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-					<div className="bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-5">
-						<div className="flex items-center justify-between border-b border-slate-200 dark:border-[#32344d] pb-3">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+					<div className="bg-[#111A30] border border-white/[0.08] rounded-2xl w-full max-w-lg p-6 shadow-2xl shadow-cyan-950/30 space-y-5 backdrop-blur-md">
+						<div className="flex items-center justify-between border-b border-slate-800 pb-3">
 							<div>
-								<h3 className="font-bold text-base text-slate-900 dark:text-slate-100">Create Payment Entry</h3>
-								<p className="text-xs text-slate-500 dark:text-[#8f93a7] mt-0.5">
+								<h3 className="font-bold text-base text-slate-100">Create Payment Entry</h3>
+								<p className="text-xs text-slate-400 mt-0.5">
 									{peDialogRow.advance.advance_type} · {formatCurrency(peDialogRow.advance.amount)}
 								</p>
 							</div>
 							<button
 								type="button"
 								onClick={() => setPeDialogRow(null)}
-								className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg transition"
+								className="text-slate-400 hover:text-slate-200 p-1 rounded-lg transition"
 							>
 								<X size={18} />
 							</button>
@@ -1777,14 +1813,14 @@ function RABWorkOrderDetail({
 						<form onSubmit={handleSubmitPEFromModal} className="space-y-4 text-xs">
 							{/* Mode of Payment */}
 							<div>
-								<label className="block text-slate-600 dark:text-[#8f93a7] font-semibold mb-1">
+								<label className="block text-slate-400 font-semibold mb-1">
 									Mode of Payment <span className="text-rose-500">*</span>
 								</label>
 								<select
 									value={selectedMop}
 									onChange={(e) => handleMopChange(e.target.value)}
 									required
-									className="w-full p-2.5 bg-slate-50 dark:bg-[#1e1e2d] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+									className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-200 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 								>
 									{mopList.length === 0 && <option value="">Loading...</option>}
 									{mopList.map((m) => (
@@ -1792,13 +1828,13 @@ function RABWorkOrderDetail({
 									))}
 								</select>
 								{mopAccountType === "Bank" && (
-									<p className="mt-1 text-amber-600 dark:text-amber-400 font-semibold">Bank mode selected — Reference No &amp; Date are mandatory.</p>
+									<p className="mt-1 text-amber-400 font-semibold">Bank mode selected — Reference No &amp; Date are mandatory.</p>
 								)}
 							</div>
 
 							{/* Paid From Account (auto-filled from MoP) */}
 							<div>
-								<label className="block text-slate-600 dark:text-[#8f93a7] font-semibold mb-1">
+								<label className="block text-slate-400 font-semibold mb-1">
 									Paid From Account
 								</label>
 								<input
@@ -1806,13 +1842,13 @@ function RABWorkOrderDetail({
 									value={paidFromAccount}
 									onChange={(e) => setPaidFromAccount(e.target.value)}
 									placeholder="Auto-filled from Mode of Payment"
-									className="w-full p-2.5 bg-slate-50 dark:bg-[#1e1e2d] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+									className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-200 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 								/>
 							</div>
 
 							{/* Posting Date */}
 							<div>
-								<label className="block text-slate-600 dark:text-[#8f93a7] font-semibold mb-1">
+								<label className="block text-slate-400 font-semibold mb-1">
 									Posting Date <span className="text-rose-500">*</span>
 								</label>
 								<input
@@ -1820,13 +1856,13 @@ function RABWorkOrderDetail({
 									required
 									value={pePostingDate}
 									onChange={(e) => setPePostingDate(e.target.value)}
-									className="w-full p-2.5 bg-slate-50 dark:bg-[#1e1e2d] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+									className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-200 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 								/>
 							</div>
 
 							{/* Reference No — required for Bank, optional for Cash */}
 							<div>
-								<label className="block text-slate-600 dark:text-[#8f93a7] font-semibold mb-1">
+								<label className="block text-slate-400 font-semibold mb-1">
 									Reference No (Cheque / UTR / Transaction Ref)
 									{mopAccountType === "Bank" && <span className="text-rose-500"> *</span>}
 								</label>
@@ -1835,17 +1871,17 @@ function RABWorkOrderDetail({
 									value={peReferenceNo}
 									onChange={(e) => setPeReferenceNo(e.target.value)}
 									placeholder="UTR / Cheque / Transaction reference number"
-									className={`w-full p-2.5 bg-slate-50 dark:bg-[#1e1e2d] border rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
+									className={`w-full p-2.5 bg-[#0E1726] border rounded-xl text-slate-200 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20 ${
 										mopAccountType === "Bank" && !peReferenceNo.trim()
-											? "border-rose-400 dark:border-rose-500"
-											: "border-slate-200 dark:border-[#32344d]"
+											? "border-rose-500"
+											: "border-slate-700/60"
 									}`}
 								/>
 							</div>
 
 							{/* Reference Date — required for Bank */}
 							<div>
-								<label className="block text-slate-600 dark:text-[#8f93a7] font-semibold mb-1">
+								<label className="block text-slate-400 font-semibold mb-1">
 									Reference Date (Cheque / Transaction Date)
 									{mopAccountType === "Bank" && <span className="text-rose-500"> *</span>}
 								</label>
@@ -1853,30 +1889,30 @@ function RABWorkOrderDetail({
 									type="date"
 									value={peReferenceDate}
 									onChange={(e) => setPeReferenceDate(e.target.value)}
-									className="w-full p-2.5 bg-slate-50 dark:bg-[#1e1e2d] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+									className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-200 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 								/>
 							</div>
 
 							{/* Error banner */}
 							{peError && (
-								<div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-xl text-rose-700 dark:text-rose-400 text-xs font-semibold">
+								<div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs font-semibold">
 									{peError}
 								</div>
 							)}
 
-							<div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-[#32344d]">
+							<div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
 								<button
 									type="button"
 									onClick={() => setPeDialogRow(null)}
 									disabled={isSubmittingPE}
-									className="px-4 py-2 bg-slate-100 dark:bg-[#1e1e2d] hover:bg-slate-200 dark:hover:bg-[#282a42] text-slate-700 dark:text-slate-200 rounded-xl font-semibold transition cursor-pointer"
+									className="px-4 py-2 bg-[#0E1726] hover:bg-slate-800 text-slate-300 rounded-xl font-semibold transition cursor-pointer"
 								>
 									Cancel
 								</button>
 								<button
 									type="submit"
 									disabled={isSubmittingPE}
-									className="px-4 py-2 bg-emerald-600 dark:bg-[#28c76f] hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+									className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-bold shadow-md shadow-emerald-950/40 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
 								>
 									<span>{isSubmittingPE ? "Creating..." : "Create Payment Entry"}</span>
 								</button>
@@ -2214,14 +2250,14 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 					<button
 						type="button"
 						onClick={onCancel}
-						className="px-4 py-2 bg-slate-100 dark:bg-[#1e1e2d] hover:bg-slate-200 dark:hover:bg-[#282a42] text-slate-600 dark:text-[#8f93a7] hover:text-slate-900 dark:hover:text-white rounded-xl border border-slate-200 dark:border-[#32344d] transition text-xs font-semibold"
+						className="px-4 py-2 bg-[#0E1726] hover:bg-slate-800 text-slate-300 rounded-xl border border-slate-700/60 transition text-xs font-semibold"
 					>
 						Cancel
 					</button>
 					<button
 						type="submit"
 						disabled={loading}
-						className="flex items-center gap-2 px-6 py-2 bg-indigo-600 dark:bg-[#7367f0] hover:bg-indigo-700 dark:hover:bg-[#685dd8] text-white font-semibold text-xs rounded-xl shadow-md transition"
+						className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-medium text-xs rounded-xl shadow-md shadow-cyan-900/40 hover:shadow-cyan-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
 					>
 						<Save size={16} />
 						<span>{loading ? "Saving..." : "Save Work Order"}</span>
@@ -2230,14 +2266,14 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 			</div>
 
 			{/* Primary Fields Grid */}
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-[#1e1e2d] p-6 rounded-2xl border border-slate-200/80 dark:border-[#2d2d3f]">
+			<div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-[#111A30] p-6 rounded-xl border border-white/[0.07] backdrop-blur-md shadow-sm">
 				<div className="space-y-4 text-xs">
 					<div>
-						<label className="block font-semibold text-slate-600 dark:text-[#8f93a7] mb-1.5">Naming Series</label>
+						<label className="block font-semibold text-slate-400 mb-1.5">Naming Series</label>
 						<select
 							value={namingSeries}
 							onChange={(e) => setNamingSeries(e.target.value)}
-							className="w-full p-2.5 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+							className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 						>
 							<option value="RABWO-.YYYY.-">RABWO-.YYYY.-</option>
 							<option value="BOQ-.YYYY.-">BOQ-.YYYY.-</option>
@@ -2245,11 +2281,11 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 					</div>
 
 					<div>
-						<label className="block font-semibold text-slate-600 dark:text-[#8f93a7] mb-1.5">Project Link *</label>
+						<label className="block font-semibold text-slate-400 mb-1.5">Project Link *</label>
 						<select
 							value={project}
 							onChange={(e) => setProject(e.target.value)}
-							className="w-full p-2.5 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+							className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 							required
 						>
 							<option value="">Select Project...</option>
@@ -2262,11 +2298,11 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 					</div>
 
 					<div>
-						<label className="block font-semibold text-slate-600 dark:text-[#8f93a7] mb-1.5">BOQ Type</label>
+						<label className="block font-semibold text-slate-400 mb-1.5">BOQ Type</label>
 						<select
 							value={boqType}
 							onChange={(e) => setBoqType(e.target.value as "Client" | "Subcontractor")}
-							className="w-full p-2.5 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+							className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 						>
 							<option value="Client">Client</option>
 							<option value="Subcontractor">Subcontractor</option>
@@ -2275,7 +2311,7 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 
 					{boqType === "Client" ? (
 						<div>
-							<label className="block font-semibold text-slate-600 dark:text-[#8f93a7] mb-1.5">Customer Name *</label>
+							<label className="block font-semibold text-slate-400 mb-1.5">Customer Name *</label>
 							<DocLinkDropdown
 								doctype="Customer"
 								value={customer}
@@ -2286,7 +2322,7 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 						</div>
 					) : (
 						<div>
-							<label className="block font-semibold text-slate-600 dark:text-[#8f93a7] mb-1.5">Supplier / Subcontractor Name *</label>
+							<label className="block font-semibold text-slate-400 mb-1.5">Supplier / Subcontractor Name *</label>
 							<DocLinkDropdown
 								doctype="Supplier"
 								value={supplier}
@@ -2300,43 +2336,43 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 
 				<div className="space-y-4 text-xs">
 					<div>
-						<label className="block font-semibold text-slate-600 dark:text-[#8f93a7] mb-1.5">Company *</label>
+						<label className="block font-semibold text-slate-400 mb-1.5">Company *</label>
 						<input
 							type="text"
 							placeholder="e.g. Tridasa"
 							value={company}
 							onChange={(e) => setCompany(e.target.value)}
-							className="w-full p-2.5 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+							className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 							required
 						/>
 					</div>
 
 					<div>
-						<label className="block font-semibold text-slate-600 dark:text-[#8f93a7] mb-1.5">Currency</label>
+						<label className="block font-semibold text-slate-400 mb-1.5">Currency</label>
 						<input
 							type="text"
 							value={currency}
 							onChange={(e) => setCurrency(e.target.value)}
-							className="w-full p-2.5 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+							className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 						/>
 					</div>
 
 					<div>
-						<label className="block font-semibold text-slate-600 dark:text-[#8f93a7] mb-1.5">Contract Date</label>
+						<label className="block font-semibold text-slate-400 mb-1.5">Contract Date</label>
 						<input
 							type="date"
 							value={contractDate}
 							onChange={(e) => setContractDate(e.target.value)}
-							className="w-full p-2.5 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+							className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 						/>
 					</div>
 
 					<div>
-						<label className="block font-semibold text-slate-600 dark:text-[#8f93a7] mb-1.5">Billing Method</label>
+						<label className="block font-semibold text-slate-400 mb-1.5">Billing Method</label>
 						<select
 							value={billingMethod}
 							onChange={(e) => setBillingMethod(e.target.value)}
-							className="w-full p-2.5 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+							className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 						>
 							<option value="Item Rate (Measured)">Item Rate (Measured)</option>
 							<option value="Percentage Completion">Percentage Completion</option>
@@ -2346,19 +2382,19 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 					</div>
 
 					<div>
-						<label className="block font-semibold text-slate-600 dark:text-[#8f93a7] mb-1.5">Defect Liability Period (Days)</label>
+						<label className="block font-semibold text-slate-400 mb-1.5">Defect Liability Period (Days)</label>
 						<input
 							type="number"
 							value={dlpDays === 0 ? "" : dlpDays}
 							onChange={(e) => setDlpDays(e.target.value === "" ? 0 : Number(e.target.value))}
-							className="w-full p-2.5 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+							className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 						/>
 					</div>
 				</div>
 			</div>
 
 			{/* Schedule of Items */}
-			<div className="bg-slate-50 dark:bg-[#1e1e2d] p-6 rounded-2xl border border-slate-200/80 dark:border-[#2d2d3f] space-y-4">
+			<div className="bg-[#111A30] p-6 rounded-xl border border-white/[0.07] backdrop-blur-md space-y-4 shadow-sm">
 				<input
 					ref={fileInputRef}
 					type="file"
@@ -2368,21 +2404,21 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 				/>
 				<div className="flex flex-wrap items-center justify-between gap-4">
 					<div>
-						<h3 className="font-bold text-base text-slate-900 dark:text-slate-100">Schedule of Items</h3>
-						<p className="text-xs text-slate-500 dark:text-[#8f93a7] mt-0.5">Use Item master autocomplete or import CSV file to populate work order items.</p>
+						<h3 className="font-bold text-base text-slate-100">Schedule of Items</h3>
+						<p className="text-xs text-slate-400 mt-0.5">Use Item master autocomplete or import CSV file to populate work order items.</p>
 					</div>
 					<div className="flex items-center gap-2">
 						<button
 							type="button"
 							onClick={handleDownloadCSVTemplate}
-							className="px-3 py-1.5 bg-white dark:bg-[#232333] hover:bg-slate-100 dark:hover:bg-[#282a42] text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl border border-slate-200 dark:border-[#32344d] transition flex items-center gap-1.5"
+							className="px-3 py-1.5 bg-[#0E1726] hover:bg-slate-800 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700/60 transition flex items-center gap-1.5"
 						>
 							<span>Download Template</span>
 						</button>
 						<button
 							type="button"
 							onClick={() => fileInputRef.current?.click()}
-							className="px-3 py-1.5 bg-indigo-50 dark:bg-[#7367f0]/15 hover:bg-indigo-100 dark:hover:bg-[#7367f0]/25 text-indigo-600 dark:text-[#7367f0] text-xs font-semibold rounded-xl border border-indigo-200 dark:border-[#7367f0]/30 transition flex items-center gap-1.5"
+							className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-xs font-semibold rounded-xl border border-cyan-500/30 transition flex items-center gap-1.5 cursor-pointer"
 						>
 							<span>Import CSV</span>
 						</button>
@@ -2391,7 +2427,7 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 
 				<div className="overflow-x-auto">
 					<table className="w-full text-left text-xs">
-						<thead className="bg-slate-100 dark:bg-[#232333] text-slate-600 dark:text-[#8f93a7] uppercase font-bold border-b border-slate-200 dark:border-[#32344d]">
+						<thead className="bg-[#0E1726] text-slate-400 uppercase font-semibold text-xs tracking-wider border-b border-slate-800">
 							<tr>
 								<th className="p-3 w-12">No.</th>
 								<th className="p-3 w-52">Item Code *</th>
@@ -2403,17 +2439,17 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 								<th className="p-3 w-16 text-center">Action</th>
 							</tr>
 						</thead>
-						<tbody className="divide-y divide-slate-200 dark:divide-[#2d2d3f]">
+						<tbody className="divide-y divide-slate-800/60">
 							{items.length === 0 ? (
 								<tr>
-									<td colSpan={8} className="p-8 text-center text-slate-400 dark:text-[#8f93a7]">
+									<td colSpan={8} className="p-8 text-center text-slate-400">
 										No items added yet. Click "+ Add Row" or "Import CSV" to start.
 									</td>
 								</tr>
 							) : (
 								items.map((item, idx) => (
-									<tr key={idx} className="hover:bg-slate-100/70 dark:hover:bg-[#282a42]/50 transition">
-										<td className="p-3 text-slate-500 dark:text-[#8f93a7] font-semibold">{idx + 1}</td>
+									<tr key={idx} className="border-b border-slate-800/60 hover:bg-cyan-500/5 transition">
+										<td className="p-3 text-slate-400 font-semibold">{idx + 1}</td>
 										<td className="p-3">
 											<ItemLinkDropdown
 												value={item.item_code}
@@ -2426,7 +2462,7 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 												placeholder="Item description"
 												value={item.description}
 												onChange={(e) => handleItemChange(idx, "description", e.target.value)}
-												className="w-full p-2 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-lg text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+												className="w-full p-2 bg-[#0E1726] border border-slate-700/60 rounded-lg text-slate-100 text-xs focus:outline-none focus:border-cyan-400"
 												required
 											/>
 										</td>
@@ -2434,7 +2470,7 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 											<select
 												value={item.uom}
 												onChange={(e) => handleItemChange(idx, "uom", e.target.value)}
-												className="w-full p-2 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-lg text-slate-900 dark:text-slate-100 text-xs font-mono focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+												className="w-full p-2 bg-[#0E1726] border border-slate-700/60 rounded-lg text-slate-100 text-xs font-mono focus:outline-none focus:border-cyan-400"
 											>
 												<option value={item.uom || "Nos"}>{item.uom || "Nos"}</option>
 												{uomList?.map((u: any) => (
@@ -2450,7 +2486,7 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 												step="any"
 												value={item.qty === 0 ? "" : (item.qty ?? "")}
 												onChange={(e) => handleItemChange(idx, "qty", e.target.value === "" ? 0 : Number(e.target.value))}
-												className="w-full p-2 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-lg text-slate-900 dark:text-slate-100 text-xs text-right focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+												className="w-full p-2 bg-[#0E1726] border border-slate-700/60 rounded-lg text-slate-100 text-xs text-right focus:outline-none focus:border-cyan-400"
 											/>
 										</td>
 										<td className="p-3">
@@ -2459,17 +2495,17 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 												step="any"
 												value={item.rate === 0 ? "" : (item.rate ?? "")}
 												onChange={(e) => handleItemChange(idx, "rate", e.target.value === "" ? 0 : Number(e.target.value))}
-												className="w-full p-2 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-lg text-slate-900 dark:text-slate-100 text-xs text-right focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+												className="w-full p-2 bg-[#0E1726] border border-slate-700/60 rounded-lg text-slate-100 text-xs text-right focus:outline-none focus:border-cyan-400"
 											/>
 										</td>
-										<td className="p-3 text-right font-bold text-indigo-600 dark:text-[#7367f0]">
+										<td className="p-3 text-right font-bold text-cyan-400">
 											{formatCurrency(item.qty * item.rate)}
 										</td>
 										<td className="p-3 text-center">
 											<button
 												type="button"
 												onClick={() => handleDeleteItemRow(idx)}
-												className="p-1.5 text-slate-400 hover:text-rose-600 dark:text-[#8f93a7] dark:hover:text-[#ea5455] rounded-lg transition"
+												className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg transition cursor-pointer"
 											>
 												<Trash2 size={16} />
 											</button>
@@ -2485,57 +2521,58 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 					<button
 						type="button"
 						onClick={handleAddItemRow}
-						className="flex items-center gap-1.5 px-4 py-2 bg-white dark:bg-[#232333] hover:bg-slate-100 dark:hover:bg-[#282a42] text-indigo-600 dark:text-[#7367f0] border border-indigo-200 dark:border-[#7367f0]/40 rounded-xl text-xs font-semibold transition"
+						className="flex items-center gap-1.5 px-4 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-semibold transition cursor-pointer"
 					>
 						<Plus size={14} />
 						<span>+ Add Row</span>
 					</button>
 
 					<div className="text-right">
-						<span className="text-xs text-slate-500 dark:text-[#8f93a7] uppercase font-bold mr-3">Total Work Order Amount:</span>
-						<span className="text-lg font-black text-indigo-600 dark:text-[#7367f0]">{formatCurrency(totalBoqAmount)}</span>
+						<span className="text-xs text-slate-400 uppercase font-bold mr-3">Total Work Order Amount:</span>
+						<span className="text-lg font-black text-cyan-400">{formatCurrency(totalBoqAmount)}</span>
 					</div>
 				</div>
 			</div>
 
 			{/* Contract Terms */}
-			<div className="bg-slate-50 dark:bg-[#1e1e2d] p-6 rounded-2xl border border-slate-200/80 dark:border-[#2d2d3f] space-y-4">
-				<h3 className="font-bold text-base text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-[#2d2d3f] pb-3">Contract Terms</h3>
+			<div className="bg-[#111A30] p-6 rounded-xl border border-white/[0.07] backdrop-blur-md space-y-4 shadow-sm">
+				<h3 className="font-bold text-base text-slate-100 border-b border-slate-800 pb-3">Contract Terms</h3>
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
 					<div className="space-y-4">
 						<div>
-							<label className="block font-semibold text-slate-600 dark:text-[#8f93a7] mb-1.5">Contract Value (₹)</label>
+							<label className="block font-semibold text-slate-400 mb-1.5">Contract Value (₹)</label>
 							<input
 								type="number"
 								step="any"
 								placeholder={`Default: ${totalBoqAmount}`}
 								value={contractValue === 0 ? "" : contractValue}
 								onChange={(e) => setContractValue(e.target.value === "" ? "" : Number(e.target.value))}
-								className="w-full p-2.5 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+								className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 							/>
 						</div>
 
 						<div>
-							<label className="block font-semibold text-slate-600 dark:text-[#8f93a7] mb-1.5">Deviation Tolerance %</label>
+							<label className="block font-semibold text-slate-400 mb-1.5">Deviation Tolerance %</label>
 							<input
 								type="number"
 								step="any"
-								min="0"
-								placeholder="25"
-								value={deviationTolerance}
-								onChange={(e) => setDeviationTolerance(e.target.value === "" ? "" : Number(e.target.value))}
-								className="w-full p-2.5 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+                min="0"
+                placeholder="25"
+                value={deviationTolerance === 0 ? "" : deviationTolerance}
+                onChange={(e) => setDeviationTolerance(e.target.value === "" ? 0 : Number(e.target.value))}
+                className="w-full p-2.5 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+
 							/>
 						</div>
 
 						<div>
-							<label className="block font-semibold text-slate-600 dark:text-[#8f93a7] mb-1.5">Mobilization Advance Amount (₹)</label>
+							<label className="block font-semibold text-slate-400 mb-1.5">Mobilization Advance Amount (₹)</label>
 							<input
 								type="number"
 								step="any"
 								value={mobilizationAdvance === 0 ? "" : mobilizationAdvance}
 								onChange={(e) => setMobilizationAdvance(e.target.value === "" ? 0 : Number(e.target.value))}
-								className="w-full p-2.5 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+								className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 							/>
 						</div>
 					</div>
@@ -2547,52 +2584,52 @@ function CreateRABWorkOrderForm({ onCancel, onSuccess }: { onCancel: () => void;
 								id="applyGst"
 								checked={applyGst}
 								onChange={(e) => setApplyGst(e.target.checked)}
-								className="w-4 h-4 rounded bg-white dark:bg-[#232333] border-slate-300 dark:border-[#32344d] text-indigo-600 dark:text-[#7367f0] focus:ring-0 cursor-pointer"
+								className="w-4 h-4 rounded bg-[#0E1726] border-slate-700/60 text-cyan-500 focus:ring-0 cursor-pointer"
 							/>
-							<label htmlFor="applyGst" className="font-semibold text-slate-900 dark:text-slate-100 cursor-pointer">
+							<label htmlFor="applyGst" className="font-semibold text-slate-100 cursor-pointer">
 								Apply GST on RA Bills
 							</label>
 						</div>
 
 						{applyGst && (
 							<div>
-								<label className="block font-semibold text-slate-600 dark:text-[#8f93a7] mb-1.5">GST Rate %</label>
+								<label className="block font-semibold text-slate-400 mb-1.5">GST Rate %</label>
 								<input
 									type="number"
 									step="any"
 									value={gstPercentage === 0 ? "" : gstPercentage}
 									onChange={(e) => setGstPercentage(e.target.value === "" ? 0 : Number(e.target.value))}
-									className="w-full p-2.5 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+									className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 								/>
 							</div>
 						)}
 
 						<div>
-							<label className="block font-semibold text-slate-600 dark:text-[#8f93a7] mb-1.5">Mobilization Payment Entry</label>
+							<label className="block font-semibold text-slate-400 mb-1.5">Mobilization Payment Entry</label>
 							<input
 								type="text"
 								placeholder="e.g. ACC-PAY-2026-00148"
 								value={mobilizationPE}
 								onChange={(e) => setMobilizationPE(e.target.value)}
-								className="w-full p-2.5 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+								className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 							/>
 						</div>
 					</div>
 				</div>
 			</div>
 
-			<div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-[#32344d]">
+			<div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
 				<button
 					type="button"
 					onClick={onCancel}
-					className="px-5 py-2.5 bg-slate-100 dark:bg-[#1e1e2d] hover:bg-slate-200 dark:hover:bg-[#282a42] text-slate-600 dark:text-[#8f93a7] hover:text-slate-900 dark:hover:text-white rounded-xl border border-slate-200 dark:border-[#32344d] transition text-xs font-semibold"
+					className="px-5 py-2.5 bg-[#0E1726] hover:bg-slate-800 text-slate-300 rounded-xl border border-slate-700/60 transition text-xs font-semibold"
 				>
 					Cancel
 				</button>
 				<button
 					type="submit"
 					disabled={loading}
-					className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 dark:bg-[#7367f0] hover:bg-indigo-700 dark:hover:bg-[#685dd8] text-white font-semibold text-xs rounded-xl shadow-md transition"
+					className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-medium text-xs rounded-xl shadow-md shadow-cyan-900/40 hover:shadow-cyan-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
 				>
 					<Save size={16} />
 					<span>{loading ? "Saving..." : "Save Work Order"}</span>
@@ -2612,30 +2649,30 @@ function RABInvoiceListView({ onSelectInvoice }: { onSelectInvoice: (invoiceId: 
 
 	if (isLoading) {
 		return (
-			<div className="p-8 space-y-4 animate-pulse bg-white dark:bg-[#232333] rounded-2xl border border-slate-200 dark:border-[#32344d]">
-				<div className="h-8 bg-slate-200 dark:bg-[#1e1e2d] rounded w-1/4"></div>
-				<div className="h-64 bg-slate-200 dark:bg-[#1e1e2d] rounded"></div>
+			<div className="p-8 space-y-4 animate-pulse bg-white dark:bg-[#111A30] rounded-xl border border-slate-200 dark:border-slate-800">
+				<div className="h-8 bg-slate-200 dark:bg-[#0E1726] rounded w-1/4"></div>
+				<div className="h-64 bg-slate-200 dark:bg-[#0E1726] rounded"></div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="bg-white dark:bg-[#232333] border border-slate-200/80 dark:border-[#32344d] rounded-2xl shadow-sm overflow-hidden">
-			<div className="p-5 border-b border-slate-200 dark:border-[#32344d] flex justify-between items-center">
+		<div className="bg-white dark:bg-[#111A30] border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden backdrop-blur-md">
+			<div className="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
 				<div>
 					<h3 className="font-bold text-base text-slate-900 dark:text-slate-100">All RAB Invoices (Purchase Invoices)</h3>
-					<p className="text-xs text-slate-500 dark:text-[#8f93a7]">Subcontractor & Supplier Billing Records</p>
+					<p className="text-xs text-slate-500 dark:text-slate-400">Subcontractor & Supplier Billing Records</p>
 				</div>
 				<button
 					onClick={() => mutate()}
-					className="px-3.5 py-1.5 bg-slate-100 dark:bg-[#1e1e2d] hover:bg-slate-200 dark:hover:bg-[#282a42] text-slate-600 dark:text-[#8f93a7] hover:text-slate-900 dark:hover:text-white text-xs font-semibold rounded-xl border border-slate-200 dark:border-[#32344d] transition flex items-center gap-1.5"
+					className="px-3.5 py-1.5 bg-slate-100 dark:bg-[#0E1726] hover:bg-slate-200 dark:hover:bg-[#16223F] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-cyan-400 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-800 transition flex items-center gap-1.5 cursor-pointer"
 				>
 					<RefreshCw size={14} /> Refresh
 				</button>
 			</div>
 			<div className="overflow-x-auto">
 				<table className="w-full text-left text-xs">
-					<thead className="bg-slate-100 dark:bg-[#1e1e2d] text-slate-600 dark:text-[#8f93a7] uppercase font-bold border-b border-slate-200 dark:border-[#32344d]">
+					<thead className="bg-slate-100 dark:bg-[#0E1726] text-slate-600 dark:text-slate-400 uppercase font-semibold text-xs tracking-wider border-b border-slate-200 dark:border-slate-800">
 						<tr>
 							<th className="p-4">Invoice No</th>
 							<th className="p-4">Supplier</th>
@@ -2647,7 +2684,7 @@ function RABInvoiceListView({ onSelectInvoice }: { onSelectInvoice: (invoiceId: 
 							<th className="p-4 text-center">Action</th>
 						</tr>
 					</thead>
-					<tbody className="divide-y divide-slate-200/80 dark:divide-[#2d2d3f]">
+					<tbody className="divide-y divide-slate-200/80 dark:divide-slate-800/60">
 						{invoices && invoices.length > 0 ? (
 							invoices.map((row: any) => {
 								const outstanding = Number(row.outstanding_amount ?? (row.status === "Paid" ? 0 : row.grand_total));
@@ -2655,32 +2692,33 @@ function RABInvoiceListView({ onSelectInvoice }: { onSelectInvoice: (invoiceId: 
 									<tr
 										key={row.name}
 										onClick={() => onSelectInvoice(row.name)}
-										className="hover:bg-slate-50/80 dark:hover:bg-[#1e1e2d]/70 transition cursor-pointer"
+										className="border-b border-slate-100 dark:border-slate-800/60 hover:bg-cyan-500/5 hover:border-l-2 hover:border-l-cyan-400 transition-all duration-150 cursor-pointer group"
 									>
-										<td className="p-4 font-mono font-bold text-indigo-600 dark:text-[#7367f0]">{row.name}</td>
+										<td className="p-4 font-mono font-bold text-cyan-600 dark:text-cyan-400 group-hover:underline">{row.name}</td>
 										<td className="p-4 font-semibold text-slate-900 dark:text-slate-100">{row.supplier || "-"}</td>
-										<td className="p-4 text-slate-600 dark:text-[#8f93a7]">{row.project || "-"}</td>
-										<td className="p-4 text-slate-600 dark:text-[#8f93a7]">{row.posting_date}</td>
+										<td className="p-4 text-slate-600 dark:text-slate-400">{row.project || "-"}</td>
+										<td className="p-4 text-slate-600 dark:text-slate-400">{row.posting_date}</td>
 										<td className="p-4 text-right font-bold text-slate-900 dark:text-slate-100">
 											{formatCurrency(row.grand_total)}
 										</td>
-										<td className="p-4 text-right font-bold text-rose-600 dark:text-[#ea5455]">
+										<td className="p-4 text-right font-bold text-rose-600 dark:text-rose-400">
 											{formatCurrency(outstanding)}
 										</td>
 										<td className="p-4 text-center">
-											<span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${outstanding === 0 || row.status === "Paid"
-													? "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30"
+											<span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide ${outstanding === 0 || row.status === "Paid"
+													? "bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30"
 													: row.status === "Overdue"
-														? "bg-rose-500/15 text-rose-600 border border-rose-500/30"
-														: "bg-amber-500/15 text-amber-600 border border-amber-500/30"
+														? "bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-500/30"
+														: "bg-amber-500/10 text-amber-500 dark:text-amber-400 border border-amber-500/30"
 												}`}>
+												<span className={`h-1.5 w-1.5 rounded-full ${outstanding === 0 || row.status === "Paid" ? "bg-emerald-400 animate-pulse" : row.status === "Overdue" ? "bg-rose-400" : "bg-amber-400 animate-pulse"}`}></span>
 												{row.status || (outstanding === 0 ? "Paid" : "Unpaid")}
 											</span>
 										</td>
 										<td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
 											<button
 												onClick={() => onSelectInvoice(row.name)}
-												className="p-1.5 bg-slate-100 dark:bg-[#1e1e2d] hover:bg-indigo-50 dark:hover:bg-[#7367f0]/20 text-slate-500 dark:text-[#8f93a7] hover:text-indigo-600 dark:hover:text-[#7367f0] rounded-lg transition"
+												className="p-1.5 text-slate-400 hover:text-cyan-400 hover:scale-110 hover:bg-cyan-500/10 rounded-lg transition-transform duration-200 cursor-pointer"
 											>
 												<Eye size={16} />
 											</button>
@@ -2723,25 +2761,25 @@ function GenericAccountingList({
 
 	if (isLoading)
 		return (
-			<div className="p-12 text-center text-slate-400 dark:text-[#8f93a7] font-medium text-xs">
+			<div className="p-12 text-center text-slate-400 dark:text-slate-400 font-medium text-xs">
 				Loading {title}...
 			</div>
 		);
 
 	return (
-		<div className="bg-white dark:bg-[#232333] border border-slate-200/80 dark:border-[#32344d] rounded-2xl shadow-sm overflow-hidden">
-			<div className="p-5 border-b border-slate-200 dark:border-[#32344d] flex justify-between items-center">
+		<div className="bg-white dark:bg-[#111A30] border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden backdrop-blur-md">
+			<div className="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
 				<h3 className="font-bold text-base text-slate-900 dark:text-slate-100">{title}</h3>
 				<button
 					onClick={() => mutate()}
-					className="px-3.5 py-1.5 bg-slate-100 dark:bg-[#1e1e2d] hover:bg-slate-200 dark:hover:bg-[#282a42] text-slate-600 dark:text-[#8f93a7] hover:text-slate-900 dark:hover:text-white text-xs font-semibold rounded-xl border border-slate-200 dark:border-[#32344d] transition flex items-center gap-1.5"
+					className="px-3.5 py-1.5 bg-slate-100 dark:bg-[#0E1726] hover:bg-slate-200 dark:hover:bg-[#16223F] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-cyan-400 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-800 transition flex items-center gap-1.5 cursor-pointer"
 				>
 					<RefreshCw size={14} /> Refresh
 				</button>
 			</div>
 			<div className="overflow-x-auto">
 				<table className="w-full text-left text-xs">
-					<thead className="bg-slate-100 dark:bg-[#1e1e2d] text-slate-600 dark:text-[#8f93a7] uppercase font-bold border-b border-slate-200 dark:border-[#32344d]">
+					<thead className="bg-slate-100 dark:bg-[#0E1726] text-slate-600 dark:text-slate-400 uppercase font-semibold text-xs tracking-wider border-b border-slate-200 dark:border-slate-800">
 						<tr>
 							{fields.map((f) => (
 								<th key={f} className="p-4">
@@ -2750,19 +2788,19 @@ function GenericAccountingList({
 							))}
 						</tr>
 					</thead>
-					<tbody className="divide-y divide-slate-200/80 dark:divide-[#2d2d3f]">
+					<tbody className="divide-y divide-slate-200/80 dark:divide-slate-800/60">
 						{data?.map((row: any, idx: number) => (
 							<tr
 								key={row.name || idx}
 								onClick={() => handleSelect && row.name && handleSelect(row.name)}
-								className={`hover:bg-indigo-50/70 dark:hover:bg-[#7367f0]/10 transition ${handleSelect ? "cursor-pointer" : ""}`}
+								className={`border-b border-slate-100 dark:border-slate-800/60 hover:bg-cyan-500/5 hover:border-l-2 hover:border-l-cyan-400 transition-all duration-150 ${handleSelect ? "cursor-pointer" : ""}`}
 							>
 								{fields.map((f) => (
 									<td
 										key={f}
 										className={`p-4 font-mono ${
 											f === "name"
-												? "font-bold text-indigo-600 dark:text-[#7367f0]"
+												? "font-bold text-cyan-600 dark:text-cyan-400"
 												: "text-slate-800 dark:text-slate-200"
 										}`}
 									>

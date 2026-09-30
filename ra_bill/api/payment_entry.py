@@ -7,6 +7,8 @@ from erpnext.accounts.doctype.payment_entry.payment_entry import (
     get_party_account,
 )
 
+from ra_bill.overrides.payment_entry import _wo_fieldname
+
 
 @frappe.whitelist()
 def get_reference_details(
@@ -37,8 +39,9 @@ def get_reference_details(
         )
 
         # Total advances already paid against this Work Order
+        _col = _wo_fieldname()
         already_paid = frappe.db.sql(
-            """
+            f"""
             SELECT COALESCE(SUM(pe.paid_amount), 0)
             FROM `tabPayment Entry` pe
             LEFT JOIN `tabPayment Entry Reference` per
@@ -46,7 +49,7 @@ def get_reference_details(
             WHERE
                 pe.docstatus = 1
                 AND (
-                    pe.work_order = %s
+                    pe.`{_col}` = %s
                     OR (per.reference_doctype = 'RAB Work Order' AND per.reference_name = %s)
                 )
                 AND (pe.is_adhoc_advance = 1 OR pe.is_mobilization_advance = 1)

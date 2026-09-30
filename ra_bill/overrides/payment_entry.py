@@ -7,6 +7,38 @@ from erpnext.accounts.doctype.payment_entry.payment_entry import (
 )
 
 
+def _wo_fieldname():
+    """
+    Return the actual column name of the Work Order link field on Payment Entry.
+    Frappe's Customize Form prefixes custom fields with ``custom_``; a natively
+    added field keeps the bare name.  We probe once per request and cache the
+    result in ``frappe.local`` so the DB round-trip only happens once.
+    """
+    cache_key = "_ra_bill_pe_wo_fieldname"
+    cached = getattr(frappe.local, cache_key, None)
+    if cached:
+        return cached
+
+    if frappe.db.has_column("Payment Entry", "custom_work_order"):
+        result = "custom_work_order"
+    elif frappe.db.has_column("Payment Entry", "work_order"):
+        result = "work_order"
+    else:
+        result = "custom_work_order"  # safe default — getattr will return None
+
+    setattr(frappe.local, cache_key, result)
+    return result
+
+
+def set_pe_work_order(pe, value):
+    """
+    Set the Work Order link on a Payment Entry document using the correct
+    fieldname for this site (``work_order`` or ``custom_work_order``).
+    Safe to call on any PaymentEntry / CustomPaymentEntry instance.
+    """
+    setattr(pe, _wo_fieldname(), value)
+
+
 def get_deduction_account(deduction_type, row_account=None, company=None):
     if row_account:
         return row_account
@@ -43,6 +75,20 @@ def get_deduction_account(deduction_type, row_account=None, company=None):
 
 
 class CustomPaymentEntry(PaymentEntry):
+
+    # ------------------------------------------------------------------
+    # Work-order fieldname tolerance
+    # Sites created via Customize Form use ``custom_work_order``; a native
+    # field definition uses ``work_order``.  Always go through these two
+    # helpers to avoid AttributeError on either site variant.
+    # ------------------------------------------------------------------
+
+    def _get_work_order(self):
+        return getattr(self, _wo_fieldname(), None)
+
+    def _set_work_order(self, value):
+        setattr(self, _wo_fieldname(), value)
+
 
     def get_valid_reference_doctypes(self):
         if self.party_type == "Customer":
@@ -103,7 +149,7 @@ class CustomPaymentEntry(PaymentEntry):
             return True
         if (
             self.payment_type == "Pay"
-            and getattr(self, "work_order", None)
+            and self._get_work_order()
             and not any(r.reference_doctype == "Purchase Invoice" for r in self.references)
             and not cint(getattr(self, "is_mobilization_advance", 0))
         ):
@@ -141,8 +187,8 @@ class CustomPaymentEntry(PaymentEntry):
                 has_ra_bill_pi = True
 
                 # Automatically set top-level Work Order field
-                if ra_bill.boq and not self.work_order:
-                    self.work_order = ra_bill.boq
+                if ra_bill.boq and not self._get_work_order():
+                    self._set_work_order(ra_bill.boq)
 
                 # Ensure RAB Work Order references are not present
                 self.references = [r for r in self.references if r.reference_doctype != "RAB Work Order"]
@@ -202,7 +248,7 @@ class CustomPaymentEntry(PaymentEntry):
             self.set_difference_amount()
 
     def apply_advance_tds_deductions(self):
-        wo_name = self.work_order or next(
+        wo_name = self._get_work_order() or next(
             (r.reference_name for r in self.references if r.reference_doctype == "RAB Work Order"),
             None,
         )
@@ -320,7 +366,7 @@ class CustomPaymentEntry(PaymentEntry):
         is_mob = getattr(self, "is_mobilization_advance", 0)
         is_adhoc = getattr(self, "is_adhoc_advance", 0) or (
             self.payment_type == "Pay"
-            and (getattr(self, "work_order", None) or any(r.reference_doctype == "RAB Work Order" for r in self.references))
+            and (self._get_work_order() or any(r.reference_doctype == "RAB Work Order" for r in self.references))
             and not any(r.reference_doctype == "Purchase Invoice" for r in self.references)
             and not is_mob
         )

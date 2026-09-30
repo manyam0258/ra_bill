@@ -427,16 +427,16 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 	return (
 		<div className="space-y-6 text-slate-800 dark:text-slate-100 transition-colors duration-200">
 			{/* Page Header */}
-			<div className="bg-white dark:bg-[#232333] border border-slate-200/80 dark:border-[#32344d] rounded-2xl p-6 shadow-sm flex flex-wrap items-center justify-between gap-4">
+			<div className="bg-white dark:bg-[#111A30] border border-slate-200/80 dark:border-white/[0.07] rounded-xl p-6 shadow-sm flex flex-wrap items-center justify-between gap-4 backdrop-blur-md">
 				<div className="flex items-center gap-4">
-					<div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-[#7367f0]/15 text-indigo-600 dark:text-[#7367f0] flex items-center justify-center border border-indigo-200 dark:border-[#7367f0]/30 shrink-0">
+					<div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center border border-cyan-500/20 shrink-0">
 						<FolderPlus size={24} />
 					</div>
 					<div>
 						<h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
 							Create / Upload Records
 						</h2>
-						<p className="text-xs text-slate-500 dark:text-[#8f93a7] mt-0.5">
+						<p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
 							Bulk import transactions via Frappe core Data Import engine or create individual records manually.
 						</p>
 					</div>
@@ -446,13 +446,13 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 			{/* 2-Column Main Layout */}
 			<div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 				{/* LEFT COLUMN (68% Width): Bulk Import Zone */}
-				<div className="lg:col-span-8 bg-white dark:bg-[#232333] border border-slate-200/80 dark:border-[#32344d] rounded-2xl p-6 shadow-sm space-y-6">
-					<div className="border-b border-slate-200 dark:border-[#32344d] pb-4 flex flex-wrap items-center justify-between gap-4">
+				<div className="lg:col-span-8 bg-white dark:bg-[#111A30] border border-slate-200/80 dark:border-white/[0.07] rounded-xl p-6 shadow-sm space-y-6 backdrop-blur-md">
+					<div className="border-b border-slate-200 dark:border-slate-800 pb-4 flex flex-wrap items-center justify-between gap-4">
 						<div>
 							<h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
 								Frappe Data Import Engine
 							</h3>
-							<p className="text-xs text-slate-500 dark:text-[#8f93a7]">
+							<p className="text-xs text-slate-500 dark:text-slate-400">
 								Official template generation, multi-row child table import, and strict link validation
 							</p>
 						</div>
@@ -462,7 +462,7 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 							<select
 								value={templateFormat}
 								onChange={(e) => setTemplateFormat(e.target.value as any)}
-								className="p-2 bg-slate-100 dark:bg-[#1e1e2d] border border-slate-200 dark:border-[#32344d] rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none"
+								className="p-2 bg-slate-100 dark:bg-[#0E1726] border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none"
 								title="Select template format"
 							>
 								<option value="Excel">Excel (.xlsx)</option>
@@ -471,7 +471,7 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 
 							<button
 								onClick={handleDownloadTemplate}
-								className="px-4 py-2 bg-indigo-50 dark:bg-[#7367f0]/15 hover:bg-indigo-100 dark:hover:bg-[#7367f0]/25 text-indigo-600 dark:text-[#7367f0] border border-indigo-200 dark:border-[#7367f0]/30 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer"
+								className="px-4 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer"
 								title={`Download official ${selectedDocType} template`}
 							>
 								<Download size={15} />
@@ -481,12 +481,12 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 					</div>
 
 					{/* Recommended Workflow Guidance */}
-					<div className="p-3.5 bg-indigo-50/70 dark:bg-[#7367f0]/10 border border-indigo-200/80 dark:border-[#7367f0]/30 rounded-xl flex items-start gap-3">
-						<div className="p-1.5 bg-indigo-600/10 dark:bg-[#7367f0]/20 rounded-lg text-indigo-600 dark:text-[#7367f0] shrink-0 mt-0.5">
+					<div className="p-3.5 bg-cyan-500/5 dark:bg-cyan-500/10 border border-cyan-500/20 rounded-xl flex items-start gap-3">
+						<div className="p-1.5 bg-cyan-500/20 rounded-lg text-cyan-600 dark:text-cyan-400 shrink-0 mt-0.5">
 							<Lightbulb size={16} />
 						</div>
 						<div className="text-xs">
-							<span className="font-bold text-indigo-900 dark:text-indigo-200">Recommended Sequence: </span>
+							<span className="font-bold text-slate-900 dark:text-cyan-300">Recommended Sequence: </span>
 							<span className="text-slate-600 dark:text-slate-300">
 								Import your <strong>Item Master</strong> first if these items don't already exist in the system, before importing Work Order or RA Bill records that reference them.
 							</span>
@@ -495,7 +495,7 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 
 					{/* 1. Document Type Selector */}
 					<div className="space-y-3">
-						<label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-[#8f93a7]">
+						<label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
 							1. Target Document Type
 						</label>
 						<div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -508,8 +508,8 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 									}}
 									className={`p-3 rounded-xl border text-xs font-semibold text-center transition cursor-pointer ${
 										selectedDocType === dt.id
-											? "bg-indigo-50 dark:bg-[#7367f0]/15 text-indigo-600 dark:text-[#7367f0] border-indigo-300 dark:border-[#7367f0] shadow-xs font-bold"
-											: "bg-slate-50 dark:bg-[#1e1e2d] text-slate-600 dark:text-[#8f93a7] border-slate-200 dark:border-[#2d2d3f] hover:border-slate-300"
+											? "bg-gradient-to-r from-cyan-500/20 to-blue-600/20 text-cyan-600 dark:text-cyan-400 border-cyan-500 shadow-sm font-bold"
+											: "bg-slate-50 dark:bg-[#0E1726] text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-slate-400"
 									}`}
 								>
 									{dt.label}
@@ -520,15 +520,15 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 
 					{/* 2. File Dropzone Area */}
 					<div className="space-y-3">
-						<label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-[#8f93a7]">
+						<label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
 							2. Upload Populated Spreadsheet
 						</label>
 						<div
 							onDragOver={(e) => e.preventDefault()}
 							onDrop={handleFileDrop}
-							className="border-2 border-dashed border-indigo-300 dark:border-[#7367f0]/50 hover:border-indigo-600 dark:hover:border-[#7367f0] bg-slate-50 dark:bg-[#1e1e2d]/60 rounded-2xl p-8 text-center transition cursor-pointer flex flex-col items-center justify-center space-y-3 group"
+							className="border-2 border-dashed border-cyan-500/40 hover:border-cyan-400 bg-slate-50/50 dark:bg-[#0E1726]/40 rounded-2xl p-8 text-center transition cursor-pointer flex flex-col items-center justify-center space-y-3 group"
 						>
-							<div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-[#7367f0]/15 text-indigo-600 dark:text-[#7367f0] flex items-center justify-center group-hover:scale-105 transition">
+							<div className="w-14 h-14 rounded-2xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center group-hover:scale-105 transition">
 								<UploadCloud size={28} />
 							</div>
 
@@ -536,12 +536,12 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 								<p className="text-sm font-bold text-slate-800 dark:text-slate-200">
 									{selectedFile ? selectedFile.name : "Drag & drop populated spreadsheet here"}
 								</p>
-								<p className="text-xs text-slate-400 dark:text-[#8f93a7] mt-0.5">
+								<p className="text-xs text-slate-400 dark:text-slate-400 mt-0.5">
 									Excel (.xlsx, .xls) or CSV (.csv) generated from the official {selectedDocType} template
 								</p>
 							</div>
 
-							<label className="mt-2 inline-block px-5 py-2 bg-indigo-600 dark:bg-[#7367f0] hover:bg-indigo-700 dark:hover:bg-[#685dd8] text-white font-semibold text-xs rounded-xl shadow-md cursor-pointer transition">
+							<label className="mt-2 inline-block px-5 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-medium text-xs rounded-xl shadow-md shadow-cyan-900/40 hover:shadow-cyan-500/30 cursor-pointer transition">
 								<span>Browse File</span>
 								<input
 									type="file"
@@ -555,17 +555,17 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 
 					{/* File Preview & Upload Action */}
 					{selectedFile && (
-						<div className="p-5 bg-slate-50 dark:bg-[#1e1e2d] rounded-2xl border border-slate-200 dark:border-[#2d2d3f] space-y-4">
+						<div className="p-5 bg-slate-50 dark:bg-[#0E1726] rounded-xl border border-slate-200 dark:border-slate-800 space-y-4">
 							<div className="flex flex-wrap items-center justify-between gap-3">
 								<div className="flex items-center gap-3">
-									<div className="p-2.5 bg-emerald-500/15 text-emerald-600 rounded-xl">
+									<div className="p-2.5 bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 rounded-xl">
 										<FileSpreadsheet size={22} />
 									</div>
 									<div>
 										<p className="text-xs font-bold text-slate-900 dark:text-slate-100">
 											{selectedFile.name}
 										</p>
-										<p className="text-[11px] text-slate-400 dark:text-[#8f93a7]">
+										<p className="text-[11px] text-slate-400 dark:text-slate-400">
 											{(selectedFile.size / 1024).toFixed(1)} KB | Target: {selectedDocType}
 										</p>
 									</div>
@@ -574,7 +574,7 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 								<button
 									onClick={handleUploadAndProcess}
 									disabled={isProcessing}
-									className="px-5 py-2.5 bg-emerald-600 dark:bg-[#28c76f] hover:bg-emerald-700 dark:hover:bg-[#24b263] text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+									className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-medium rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
 								>
 									{isProcessing && <RefreshCw size={14} className="animate-spin" />}
 									<span>{isProcessing ? "Processing Import..." : "Start Data Import"}</span>
@@ -583,7 +583,7 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 
 							{/* Active Processing Stage */}
 							{isProcessing && processStage && (
-								<div className="flex items-center gap-2 text-xs font-semibold text-indigo-600 dark:text-[#7367f0] pt-2 border-t border-slate-200 dark:border-[#2d2d3f]">
+								<div className="flex items-center gap-2 text-xs font-semibold text-cyan-600 dark:text-cyan-400 pt-2 border-t border-slate-200 dark:border-slate-800">
 									<RefreshCw size={14} className="animate-spin" />
 									<span>{processStage}</span>
 								</div>
@@ -593,7 +593,7 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 
 					{/* General Error Banner */}
 					{importError && (
-						<div className="p-4 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-2xl text-xs text-rose-700 dark:text-rose-400 flex items-start gap-3">
+						<div className="p-4 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-xl text-xs text-rose-700 dark:text-rose-400 flex items-start gap-3">
 							<AlertCircle size={18} className="shrink-0 mt-0.5" />
 							<div>
 								<p className="font-bold">Import Error</p>
@@ -604,8 +604,8 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 
 					{/* Data Import Results Panel */}
 					{importStatus && (
-						<div className="p-5 bg-slate-50 dark:bg-[#1e1e2d] rounded-2xl border border-slate-200 dark:border-[#2d2d3f] space-y-4">
-							<div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-[#2d2d3f] pb-3">
+						<div className="p-5 bg-slate-50 dark:bg-[#0E1726] rounded-xl border border-slate-200 dark:border-slate-800 space-y-4">
+							<div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
 								<div className="flex items-center gap-2.5">
 									<h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
 										Import Results
@@ -613,10 +613,10 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 									<span
 										className={`px-3 py-0.5 rounded-full text-xs font-bold border ${
 											importStatus.status === "Success"
-												? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30"
+												? "bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border-emerald-500/30"
 												: importStatus.status === "Partial Success"
-												? "bg-amber-500/15 text-amber-600 border-amber-500/30"
-												: "bg-rose-500/15 text-rose-600 border-rose-500/30"
+												? "bg-amber-500/15 text-amber-500 dark:text-amber-400 border-amber-500/30"
+												: "bg-rose-500/15 text-rose-500 dark:text-rose-400 border-rose-500/30"
 										}`}
 									>
 										{importStatus.status}
@@ -628,7 +628,7 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 										href={`/app/data-import/${encodeURIComponent(dataImportName)}`}
 										target="_blank"
 										rel="noreferrer"
-										className="text-xs text-indigo-600 dark:text-[#7367f0] hover:underline flex items-center gap-1 font-semibold"
+										className="text-xs text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1 font-semibold"
 									>
 										<span>Desk Document: {dataImportName}</span>
 										<ExternalLink size={12} />
@@ -638,21 +638,21 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 
 							{/* Summary Counters */}
 							<div className="grid grid-cols-3 gap-3">
-								<div className="p-3 bg-white dark:bg-[#232333] rounded-xl border border-slate-200 dark:border-[#32344d]">
+								<div className="p-3 bg-white dark:bg-[#111A30] rounded-xl border border-slate-200 dark:border-slate-800">
 									<p className="text-[10px] font-bold uppercase text-slate-400">Total Records</p>
 									<p className="text-lg font-extrabold text-slate-800 dark:text-slate-100 mt-0.5">
 										{importStatus.total_records ?? (successfulLogs.length + failedLogs.length)}
 									</p>
 								</div>
-								<div className="p-3 bg-white dark:bg-[#232333] rounded-xl border border-slate-200 dark:border-[#32344d]">
+								<div className="p-3 bg-white dark:bg-[#111A30] rounded-xl border border-slate-200 dark:border-slate-800">
 									<p className="text-[10px] font-bold uppercase text-emerald-500">Successful</p>
-									<p className="text-lg font-extrabold text-emerald-600 dark:text-[#28c76f] mt-0.5">
+									<p className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">
 										{importStatus.success ?? successfulLogs.length}
 									</p>
 								</div>
-								<div className="p-3 bg-white dark:bg-[#232333] rounded-xl border border-slate-200 dark:border-[#32344d]">
+								<div className="p-3 bg-white dark:bg-[#111A30] rounded-xl border border-slate-200 dark:border-slate-800">
 									<p className="text-[10px] font-bold uppercase text-rose-500">Failed</p>
-									<p className="text-lg font-extrabold text-rose-600 dark:text-[#ea5455] mt-0.5">
+									<p className="text-lg font-extrabold text-rose-600 dark:text-rose-400 mt-0.5">
 										{importStatus.failed ?? failedLogs.length}
 									</p>
 								</div>
@@ -678,17 +678,17 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 									</div>
 
 									<div className="overflow-x-auto rounded-xl border border-rose-200 dark:border-rose-500/30">
-										<table className="w-full text-left text-xs bg-white dark:bg-[#232333]">
+										<table className="w-full text-left text-xs bg-white dark:bg-[#111A30]">
 											<thead className="bg-rose-50/50 dark:bg-rose-500/10 text-slate-700 dark:text-slate-300 font-bold border-b border-rose-200 dark:border-rose-500/30">
 												<tr>
 													<th className="p-2.5 w-20">Row(s)</th>
 													<th className="p-2.5">Validation Reason / Error</th>
 												</tr>
 											</thead>
-											<tbody className="divide-y divide-slate-200 dark:divide-[#32344d]">
+											<tbody className="divide-y divide-slate-200 dark:divide-slate-800">
 												{failedLogs.map((log, idx) => (
 													<tr key={idx} className="hover:bg-rose-50/30 dark:hover:bg-rose-500/5">
-														<td className="p-2.5 font-mono font-bold text-rose-600 dark:text-[#ea5455]">
+														<td className="p-2.5 font-mono font-bold text-rose-600 dark:text-rose-400">
 															Row {parseRowIndex(log.row_indexes)}
 														</td>
 														<td className="p-2.5 text-slate-700 dark:text-slate-300">
@@ -705,7 +705,7 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 							{/* Successful Records Section with Desk Submit Action */}
 							{successfulLogs.length > 0 && (
 								<div className="space-y-3 pt-2">
-									<div className="p-3.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl text-xs text-emerald-700 dark:text-[#28c76f] flex items-center justify-between">
+									<div className="p-3.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl text-xs text-emerald-700 dark:text-emerald-400 flex items-center justify-between">
 										<div className="flex items-center gap-2">
 											<CheckCircle2 size={16} />
 											<span className="font-semibold">
@@ -715,14 +715,14 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 									</div>
 
 									<div className="overflow-x-auto rounded-xl border border-emerald-200 dark:border-emerald-500/30">
-										<table className="w-full text-left text-xs bg-white dark:bg-[#232333]">
+										<table className="w-full text-left text-xs bg-white dark:bg-[#111A30]">
 											<thead className="bg-emerald-50/50 dark:bg-emerald-500/10 text-slate-700 dark:text-slate-300 font-bold border-b border-emerald-200 dark:border-emerald-500/30">
 												<tr>
 													<th className="p-2.5">Imported Document</th>
 													<th className="p-2.5 text-center w-52">Desk Action</th>
 												</tr>
 											</thead>
-											<tbody className="divide-y divide-slate-200 dark:divide-[#32344d]">
+											<tbody className="divide-y divide-slate-200 dark:divide-slate-800">
 												{successfulLogs.map((log, idx) => (
 													<tr key={idx} className="hover:bg-emerald-50/30 dark:hover:bg-emerald-500/5">
 														<td className="p-2.5 font-mono font-bold text-slate-900 dark:text-slate-100">
@@ -733,7 +733,7 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 																href={getDeskDocUrl(selectedDocType, log.docname)}
 																target="_blank"
 																rel="noreferrer"
-																className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 dark:bg-[#7367f0]/15 hover:bg-indigo-100 dark:hover:bg-[#7367f0]/25 text-indigo-600 dark:text-[#7367f0] border border-indigo-200 dark:border-[#7367f0]/30 rounded-lg text-xs font-bold transition"
+																className="inline-flex items-center gap-1.5 px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 rounded-lg text-xs font-bold transition"
 															>
 																<span>Review &amp; Submit in Desk</span>
 																<ExternalLink size={12} />
@@ -752,38 +752,38 @@ export function CreateUploadRecords({ onOpenCreateWO, onOpenCreateRABill }: Crea
 
 				{/* RIGHT COLUMN (32% Width): Direct Manual Creation Panel */}
 				<div className="lg:col-span-4 space-y-6">
-					<div className="bg-white dark:bg-[#232333] border border-slate-200/80 dark:border-[#32344d] rounded-2xl p-6 shadow-sm space-y-6">
-						<div className="border-b border-slate-200 dark:border-[#32344d] pb-4">
+					<div className="bg-white dark:bg-[#111A30] border border-slate-200/80 dark:border-white/[0.07] rounded-xl p-6 shadow-sm space-y-6 backdrop-blur-md">
+						<div className="border-b border-slate-200 dark:border-slate-800 pb-4">
 							<h3 className="font-bold text-base text-slate-900 dark:text-slate-100">Direct Record Creation</h3>
-							<p className="text-xs text-slate-500 dark:text-[#8f93a7] mt-0.5">Create individual records manually</p>
+							<p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Create individual records manually</p>
 						</div>
 
 						{/* Top Button: + Add New RAB Work Order */}
 						<div className="space-y-2">
 							<button
 								onClick={onOpenCreateWO}
-								className="w-full py-3.5 px-4 bg-indigo-600 dark:bg-[#7367f0] hover:bg-indigo-700 dark:hover:bg-[#685dd8] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-md transition cursor-pointer"
+								className="w-full py-3.5 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-medium shadow-md shadow-cyan-900/40 hover:shadow-cyan-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer"
 							>
 								<Plus size={16} />
 								<span>+ Add New RAB Work Order</span>
 							</button>
-							<p className="text-[11px] text-slate-500 dark:text-[#8f93a7] px-1 text-center">
+							<p className="text-[11px] text-slate-500 dark:text-slate-400 px-1 text-center">
 								Create a new contract, schedule of items, and billing terms.
 							</p>
 						</div>
 
-						<div className="h-[1px] bg-slate-200 dark:bg-[#2d2d3f]"></div>
+						<div className="h-[1px] bg-slate-200 dark:bg-slate-800"></div>
 
 						{/* Bottom Button: + Add New RA Bill */}
 						<div className="space-y-2">
 							<button
 								onClick={onOpenCreateRABill}
-								className="w-full py-3.5 px-4 bg-slate-100 dark:bg-[#282a42] hover:bg-slate-200 dark:hover:bg-[#32344d] border border-indigo-200 dark:border-[#7367f0]/50 text-indigo-700 dark:text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition cursor-pointer"
+								className="w-full py-3.5 px-4 bg-slate-100 dark:bg-[#0E1726] hover:bg-slate-200 dark:hover:bg-[#16223F] border border-cyan-500/30 text-cyan-600 dark:text-cyan-400 rounded-xl font-medium text-xs flex items-center justify-center gap-2 shadow-xs hover:border-cyan-400 transition cursor-pointer"
 							>
-								<Receipt size={16} className="text-indigo-600 dark:text-[#7367f0]" />
+								<Receipt size={16} className="text-cyan-600 dark:text-cyan-400" />
 								<span>+ Add New RA Bill</span>
 							</button>
-							<p className="text-[11px] text-slate-500 dark:text-[#8f93a7] px-1 text-center">
+							<p className="text-[11px] text-slate-500 dark:text-slate-400 px-1 text-center">
 								Generate an RA Bill against an active Work Order.
 							</p>
 						</div>

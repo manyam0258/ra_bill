@@ -73,11 +73,15 @@ export function ItemLinkDropdown({ value, onChange, placeholder = "Select or sea
 		<div className="relative w-full" ref={containerRef}>
 			<div
 				onClick={() => setIsOpen(!isOpen)}
-				className="w-full p-2 bg-slate-50 dark:bg-[#1e1e2d] border border-slate-200 dark:border-[#32344d] rounded-xl text-xs flex items-center justify-between cursor-pointer hover:border-indigo-500 transition"
+				className={`w-full p-2 bg-[#0E1726] border rounded-xl text-xs flex items-center justify-between cursor-pointer transition ${
+					isOpen
+						? "border-cyan-400 ring-2 ring-cyan-500/20"
+						: "border-slate-700/60 hover:border-cyan-500/60"
+				}`}
 			>
 				<div className="flex items-center gap-2 overflow-hidden truncate">
-					<Package size={14} className="text-indigo-600 dark:text-[#7367f0] shrink-0" />
-					<span className="font-mono font-bold text-slate-900 dark:text-slate-100 truncate">
+					<Package size={14} className="text-cyan-400 shrink-0" />
+					<span className="font-mono font-bold text-slate-100 truncate">
 						{value || placeholder}
 					</span>
 				</div>
@@ -85,8 +89,8 @@ export function ItemLinkDropdown({ value, onChange, placeholder = "Select or sea
 			</div>
 
 			{isOpen && (
-				<div className="absolute left-0 top-full mt-1.5 w-full bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-2xl shadow-xl z-50 overflow-hidden text-xs">
-					<div className="p-2 border-b border-slate-200 dark:border-[#32344d] flex items-center gap-2 bg-slate-50 dark:bg-[#1e1e2d]">
+				<div className="absolute left-0 top-full mt-1.5 w-full bg-[#111A30] border border-white/[0.08] rounded-2xl shadow-xl shadow-cyan-950/40 z-50 overflow-hidden text-xs backdrop-blur-md">
+					<div className="p-2 border-b border-slate-800 flex items-center gap-2 bg-[#0E1726]">
 						<Search size={14} className="text-slate-400 shrink-0" />
 						<input
 							type="text"
@@ -94,11 +98,11 @@ export function ItemLinkDropdown({ value, onChange, placeholder = "Select or sea
 							onChange={(e) => setSearchQuery(e.target.value)}
 							placeholder="Search item code, group, description..."
 							autoFocus
-							className="w-full bg-transparent text-slate-900 dark:text-slate-100 focus:outline-none"
+							className="w-full bg-transparent text-slate-100 placeholder-slate-500 focus:outline-none"
 						/>
 					</div>
 
-					<div className="max-h-56 overflow-y-auto divide-y divide-slate-100 dark:divide-[#2d2d3f]">
+					<div className="max-h-56 overflow-y-auto divide-y divide-slate-800/60">
 						{isLoading ? (
 							<div className="p-4 text-center text-slate-400">Loading items...</div>
 						) : filteredItems.length === 0 ? (
@@ -112,7 +116,7 @@ export function ItemLinkDropdown({ value, onChange, placeholder = "Select or sea
 										e.stopPropagation();
 										setIsQuickAddOpen(true);
 									}}
-									className="px-3 py-1.5 bg-indigo-600 dark:bg-[#7367f0] hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold inline-flex items-center gap-1 shadow-sm transition cursor-pointer"
+									className="px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-lg text-xs font-semibold inline-flex items-center gap-1 shadow-sm transition cursor-pointer"
 								>
 									<Plus size={13} />
 									<span>+ Create Item {searchQuery ? `"${searchQuery}"` : ""}</span>
@@ -123,11 +127,11 @@ export function ItemLinkDropdown({ value, onChange, placeholder = "Select or sea
 								<div
 									key={it.name}
 									onClick={() => handleSelectItem(it)}
-									className="p-2.5 hover:bg-indigo-50 dark:hover:bg-[#7367f0]/15 cursor-pointer transition flex justify-between items-center"
+									className="p-2.5 hover:bg-cyan-500/10 cursor-pointer transition flex justify-between items-center"
 								>
 									<div>
-										<p className="font-mono font-bold text-indigo-600 dark:text-[#7367f0]">{it.name}</p>
-										<p className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-1">{it.item_name || it.description}</p>
+										<p className="font-mono font-bold text-cyan-400">{it.name}</p>
+										<p className="text-[11px] text-slate-300 line-clamp-1">{it.item_name || it.description}</p>
 									</div>
 									<div className="text-right text-[10px] text-slate-400 shrink-0 ml-2">
 										<span className="font-semibold block">{it.item_group || "Item"}</span>
@@ -139,14 +143,14 @@ export function ItemLinkDropdown({ value, onChange, placeholder = "Select or sea
 					</div>
 
 					{/* Bottom Action: + Create New Item (always visible for instant access) */}
-					<div className="p-2 border-t border-slate-200 dark:border-[#32344d] bg-slate-50/70 dark:bg-[#1e1e2d]">
+					<div className="p-2 border-t border-slate-800 bg-[#0E1726]">
 						<button
 							type="button"
 							onClick={(e) => {
 								e.stopPropagation();
 								setIsQuickAddOpen(true);
 							}}
-							className="w-full py-2 px-3 bg-indigo-50 hover:bg-indigo-100 dark:bg-[#7367f0]/15 dark:hover:bg-[#7367f0]/25 text-indigo-600 dark:text-[#7367f0] border border-indigo-200 dark:border-[#7367f0]/30 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+							className="w-full py-2 px-3 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
 						>
 							<Plus size={14} />
 							<span>+ Create New Item</span>
