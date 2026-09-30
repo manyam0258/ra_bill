@@ -2,6 +2,8 @@ import frappe
 from frappe import _
 from frappe.model.workflow import get_workflow_name, get_transitions, apply_workflow
 
+from ra_bill.overrides.payment_entry import set_pe_work_order, _wo_fieldname
+
 
 @frappe.whitelist()
 def get_workflow_details(doctype: str, name: str):
@@ -206,7 +208,7 @@ def create_payment_entry_from_invoice(
 	if ra_bill_name:
 		wo_name = frappe.db.get_value("RA Bill", ra_bill_name, "boq")
 		if wo_name:
-			pe.work_order = wo_name
+			set_pe_work_order(pe, wo_name)
 
 	pe.references = [r for r in pe.references if r.reference_doctype != "RAB Work Order"]
 
@@ -350,17 +352,18 @@ def get_linked_payment_entries(doctype: str, name: str):
 		)
 
 	elif doctype == "RAB Work Order":
+		_col = _wo_fieldname()
 		return frappe.db.sql(
-			"""
+			f"""
 			SELECT DISTINCT pe.name, pe.posting_date, pe.party_type, pe.party, pe.party_name, pe.paid_amount, pe.received_amount, pe.docstatus, pe.payment_type
 			FROM `tabPayment Entry` pe
 			LEFT JOIN `tabPayment Entry Reference` per ON per.parent = pe.name
 			WHERE pe.docstatus != 2 AND (
-				pe.work_order = %s
+				pe.`{_col}` = %s
 				OR (per.reference_doctype = 'RAB Work Order' AND per.reference_name = %s)
 			)
 			ORDER BY pe.creation DESC
-		""",
+			""",
 			(name, name),
 			as_dict=True,
 		)
@@ -453,7 +456,8 @@ def get_rab_ledger(work_order=None, supplier=None):
 			params.extend([dt, dn])
 
 		if wo_names:
-			where_clauses.append("pe.work_order IN %s")
+			_col = _wo_fieldname()
+			where_clauses.append(f"pe.`{_col}` IN %s")
 			params.append(tuple(wo_names))
 
 		clause_str = " OR ".join(where_clauses)

@@ -210,21 +210,21 @@ export function QuickAddItemModal({
 	};
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto animate-fadeIn">
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto animate-fadeIn">
 			<div
-				className="bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden my-auto"
+				className="bg-[#111A30] border border-white/[0.08] rounded-2xl w-full max-w-lg shadow-2xl shadow-cyan-950/40 backdrop-blur-md overflow-hidden my-auto"
 				onClick={(e) => e.stopPropagation()}
 			>
 				{/* Dialog Header */}
-				<div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 dark:border-[#32344d]">
-					<h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+				<div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+					<h3 className="text-base font-bold text-slate-100">
 						New Item
 					</h3>
 					<button
 						type="button"
 						onClick={onClose}
 						disabled={isSubmitting}
-						className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
+						className="p-1 rounded-lg text-slate-400 hover:text-slate-200 transition cursor-pointer"
 						title="Close dialog"
 					>
 						<X size={18} />
@@ -234,14 +234,14 @@ export function QuickAddItemModal({
 				{/* Dialog Form Body */}
 				<form onSubmit={handleSave} className="p-6 space-y-4 text-xs">
 					{errorMessage && (
-						<div className="p-3 bg-rose-50 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-500/30 rounded-xl text-rose-700 dark:text-rose-400 font-semibold text-xs leading-relaxed">
+						<div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 font-semibold text-xs leading-relaxed">
 							{errorMessage}
 						</div>
 					)}
 
 					{/* 1. Item Code * */}
 					<div className="space-y-1.5">
-						<label className="block text-slate-700 dark:text-slate-200 font-semibold">
+						<label className="block text-slate-300 font-semibold">
 							Item Code <span className="text-rose-500">*</span>
 						</label>
 						<input
@@ -251,13 +251,13 @@ export function QuickAddItemModal({
 							placeholder="e.g. ITEM-001"
 							autoFocus
 							required
-							className="w-full px-3.5 py-2.5 bg-slate-100/70 dark:bg-[#1e1e2d] border border-slate-200/90 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-indigo-500 dark:focus:border-[#7367f0] font-mono text-xs transition"
+							className="w-full px-3.5 py-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20 font-mono text-xs transition"
 						/>
 					</div>
 
 					{/* 2. Item Name */}
 					<div className="space-y-1.5">
-						<label className="block text-slate-700 dark:text-slate-200 font-semibold">
+						<label className="block text-slate-300 font-semibold">
 							Item Name
 						</label>
 						<input
@@ -265,13 +265,13 @@ export function QuickAddItemModal({
 							value={itemName}
 							onChange={(e) => setItemName(e.target.value)}
 							placeholder="Descriptive name (defaults to Item Code if blank)"
-							className="w-full px-3.5 py-2.5 bg-slate-100/70 dark:bg-[#1e1e2d] border border-slate-200/90 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-indigo-500 dark:focus:border-[#7367f0] text-xs transition"
+							className="w-full px-3.5 py-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20 text-xs transition"
 						/>
 					</div>
 
 					{/* 3. Item Group * */}
 					<div className="space-y-1.5">
-						<label className="block text-slate-700 dark:text-slate-200 font-semibold">
+						<label className="block text-slate-300 font-semibold">
 							Item Group <span className="text-rose-500">*</span>
 						</label>
 						<DocLinkDropdown
@@ -285,7 +285,7 @@ export function QuickAddItemModal({
 
 					{/* 4. HSN/SAC * */}
 					<div className="space-y-1.5 relative" ref={hsnContainerRef}>
-						<label className="block text-slate-700 dark:text-slate-200 font-semibold">
+						<label className="block text-slate-300 font-semibold">
 							HSN/SAC <span className="text-rose-500">*</span>
 						</label>
 						<div className="relative">
@@ -298,7 +298,7 @@ export function QuickAddItemModal({
 								}}
 								placeholder="e.g. 9954 or search category..."
 								required
-								className="w-full px-3.5 py-2.5 bg-slate-100/70 dark:bg-[#1e1e2d] border border-slate-200/90 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-indigo-500 dark:focus:border-[#7367f0] font-mono text-xs transition pr-8"
+								className="w-full px-3.5 py-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20 font-mono text-xs transition pr-8"
 							/>
 							{isSearchingHsn && (
 								<div className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400">
@@ -306,13 +306,13 @@ export function QuickAddItemModal({
 								</div>
 							)}
 						</div>
-						<p className="text-[11px] text-slate-500 dark:text-[#8f93a7]">
+						<p className="text-[11px] text-slate-400">
 							You can search code by the description of the category.
 						</p>
 
 						{/* Live HSN Suggestions Dropdown */}
 						{showHsnDropdown && hsnSuggestions.length > 0 && (
-							<div className="absolute left-0 top-full mt-1 w-full bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-[#2d2d3f]">
+							<div className="absolute left-0 top-full mt-1 w-full bg-[#111A30] border border-white/[0.08] rounded-xl shadow-xl shadow-cyan-950/40 z-50 max-h-48 overflow-y-auto divide-y divide-slate-800/60 backdrop-blur-md">
 								{hsnSuggestions.map((item) => (
 									<div
 										key={item.value}
@@ -320,12 +320,12 @@ export function QuickAddItemModal({
 											setGstHsnCode(item.value);
 											setShowHsnDropdown(false);
 										}}
-										className="p-2 hover:bg-indigo-50 dark:hover:bg-[#7367f0]/15 cursor-pointer transition flex items-start gap-2"
+										className="p-2 hover:bg-cyan-500/10 cursor-pointer transition flex items-start gap-2"
 									>
-										<span className="font-mono font-bold text-indigo-600 dark:text-[#7367f0] shrink-0">
+										<span className="font-mono font-bold text-cyan-400 shrink-0">
 											{item.value}
 										</span>
-										<span className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-1">
+										<span className="text-[11px] text-slate-300 line-clamp-1">
 											{item.description}
 										</span>
 									</div>
@@ -336,7 +336,7 @@ export function QuickAddItemModal({
 
 					{/* 5. Default Unit of Measure * */}
 					<div className="space-y-1.5">
-						<label className="block text-slate-700 dark:text-slate-200 font-semibold">
+						<label className="block text-slate-300 font-semibold">
 							Default Unit of Measure <span className="text-rose-500">*</span>
 						</label>
 						<DocLinkDropdown
@@ -355,9 +355,9 @@ export function QuickAddItemModal({
 								type="checkbox"
 								checked={maintainStock}
 								onChange={(e) => setMaintainStock(e.target.checked)}
-								className="w-4 h-4 rounded border-slate-300 dark:border-[#32344d] text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+								className="w-4 h-4 rounded bg-[#0E1726] border-slate-700/60 text-cyan-500 focus:ring-0 cursor-pointer"
 							/>
-							<span className="text-slate-800 dark:text-slate-200 font-semibold text-xs">
+							<span className="text-slate-200 font-semibold text-xs">
 								Maintain Stock
 							</span>
 						</label>
@@ -370,20 +370,20 @@ export function QuickAddItemModal({
 								type="checkbox"
 								checked={isFixedAsset}
 								onChange={(e) => setIsFixedAsset(e.target.checked)}
-								className="w-4 h-4 rounded border-slate-300 dark:border-[#32344d] text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+								className="w-4 h-4 rounded bg-[#0E1726] border-slate-700/60 text-cyan-500 focus:ring-0 cursor-pointer"
 							/>
-							<span className="text-slate-800 dark:text-slate-200 font-semibold text-xs">
+							<span className="text-slate-200 font-semibold text-xs">
 								Is Fixed Asset
 							</span>
 						</label>
 					</div>
 
 					{/* Footer Buttons */}
-					<div className="flex items-center justify-between pt-4 border-t border-slate-200/80 dark:border-[#32344d] mt-6">
+					<div className="flex items-center justify-between pt-4 border-t border-slate-800 mt-6">
 						<button
 							type="button"
 							onClick={handleEditFullForm}
-							className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-[#282a42] dark:hover:bg-[#32344d] text-slate-700 dark:text-slate-200 rounded-xl font-semibold text-xs transition cursor-pointer"
+							className="px-4 py-2 bg-[#0E1726] hover:bg-slate-800 text-slate-300 rounded-xl border border-slate-700/60 font-semibold text-xs transition cursor-pointer"
 						>
 							Edit Full Form
 						</button>
@@ -391,7 +391,7 @@ export function QuickAddItemModal({
 						<button
 							type="submit"
 							disabled={isSubmitting}
-							className="px-6 py-2 bg-slate-900 hover:bg-black dark:bg-[#7367f0] dark:hover:bg-[#685dd8] text-white rounded-xl font-bold text-xs shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+							className="px-6 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl font-bold text-xs shadow-md shadow-cyan-900/40 hover:shadow-cyan-500/30 transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
 						>
 							{isSubmitting && <Loader2 size={13} className="animate-spin" />}
 							<span>Save</span>

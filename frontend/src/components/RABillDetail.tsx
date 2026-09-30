@@ -884,15 +884,15 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 	const getStatusBadgeStyle = (status?: string | null) => {
 		const lower = (status || "Draft").toLowerCase();
 		if (lower.includes("approved") || lower.includes("submitted")) {
-			return "bg-emerald-500/15 text-emerald-600 border-emerald-500/30";
+			return "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
 		}
 		if (lower.includes("reject") || lower.includes("cancel")) {
-			return "bg-rose-500/15 text-rose-600 border-rose-500/30";
+			return "bg-rose-500/10 text-rose-400 border-rose-500/30";
 		}
 		if (lower.includes("pending") || lower.includes("check") || lower.includes("certif")) {
-			return "bg-indigo-500/15 text-indigo-600 border-indigo-500/30";
+			return "bg-cyan-500/10 text-cyan-400 border-cyan-500/30";
 		}
-		return "bg-amber-500/15 text-amber-600 border-amber-500/30";
+		return "bg-amber-500/10 text-amber-400 border-amber-500/30";
 	};
 
 	const handleCreateInvoice = async () => {
@@ -940,9 +940,9 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 								{currentStatusLabel}
 							</span>
 						</div>
-						<p className="text-xs text-slate-500 dark:text-[#8f93a7] mt-0.5">
-							Project: <span className="font-bold text-slate-800 dark:text-slate-200">{bill.project || "RISE"}</span> | WO:{" "}
-							<span className="font-mono text-indigo-600 dark:text-[#7367f0]">{bill.boq || "-"}</span>
+						<p className="text-xs text-slate-400 mt-0.5">
+							Project: <span className="font-bold text-slate-200">{bill.project || "RISE"}</span> | WO:{" "}
+							<span className="font-mono text-cyan-400">{bill.boq || "-"}</span>
 						</p>
 					</div>
 				</div>
@@ -953,7 +953,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 						<button
 							onClick={handleSaveDraftAndAlert}
 							disabled={isSaving}
-							className="px-4 py-2 bg-slate-100 dark:bg-[#1e1e2d] hover:bg-slate-200 dark:hover:bg-[#282a42] text-slate-800 dark:text-slate-200 font-bold rounded-xl border border-slate-200 dark:border-[#32344d] transition flex items-center gap-1.5"
+							className="px-4 py-2 bg-[#0E1726] hover:bg-slate-800 text-slate-200 font-bold rounded-xl border border-slate-700/60 transition flex items-center gap-1.5 cursor-pointer"
 						>
 							<Save size={15} />
 							<span>{isSaving ? "Saving..." : "Save Draft"}</span>
@@ -965,7 +965,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 						linkedInvoice ? (
 							<button
 								onClick={() => onCreateInvoiceSuccess && onCreateInvoiceSuccess(linkedInvoice)}
-								className="px-4 py-2 bg-indigo-600 dark:bg-[#7367f0] hover:bg-indigo-700 dark:hover:bg-[#685dd8] text-white font-bold rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
+								className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-medium rounded-xl shadow-md shadow-cyan-900/40 hover:shadow-cyan-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5 cursor-pointer"
 							>
 								<Receipt size={15} />
 								<span>View RAB Invoice ({linkedInvoice})</span>
@@ -974,7 +974,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 							<button
 								onClick={handleCreateInvoice}
 								disabled={isCreatingInvoice}
-								className="px-4 py-2 bg-emerald-600 dark:bg-[#28c76f] hover:bg-emerald-700 dark:hover:bg-[#24b263] text-white font-bold rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
+								className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium rounded-xl shadow-md shadow-emerald-950/40 transition flex items-center gap-1.5 cursor-pointer"
 							>
 								<Receipt size={15} />
 								<span>{isCreatingInvoice ? "Creating Invoice..." : "Create RAB Invoice"}</span>
@@ -989,7 +989,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 								key={t.action}
 								onClick={() => handleApplyWorkflowAction(t.action)}
 								disabled={isApplyingWorkflow || isSaving}
-								className="px-4 py-2 bg-indigo-600 dark:bg-[#7367f0] hover:bg-indigo-700 dark:hover:bg-[#685dd8] text-white font-bold rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
+								className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-medium rounded-xl shadow-md shadow-cyan-900/40 hover:shadow-cyan-500/30 transition flex items-center gap-1.5 cursor-pointer"
 							>
 								<CheckCircle2 size={15} />
 								<span>{isApplyingWorkflow ? "Processing..." : t.action}</span>
@@ -1000,7 +1000,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 							<button
 								onClick={handleSubmitBill}
 								disabled={isSubmitting}
-								className="px-4 py-2 bg-emerald-600 dark:bg-[#28c76f] hover:bg-emerald-700 dark:hover:bg-[#24b263] text-white font-bold rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
+								className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium rounded-xl shadow-md shadow-emerald-950/40 transition flex items-center gap-1.5 cursor-pointer"
 							>
 								<CheckCircle2 size={15} />
 								<span>{isSubmitting ? "Submitting..." : "Submit RA Bill"}</span>
@@ -1008,7 +1008,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 						)
 					)}
 
-					<button className="p-2 bg-slate-100 dark:bg-[#1e1e2d] hover:bg-slate-200 text-slate-600 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-[#32344d]" title="Print">
+					<button className="p-2 bg-[#0E1726] hover:bg-slate-800 text-slate-300 rounded-xl border border-slate-700/60" title="Print">
 						<Printer size={15} />
 					</button>
 				</div>
@@ -1017,44 +1017,44 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 			{/* 1b. WORK ORDER FINANCIAL SUMMARY CARDS */}
 			<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
 				{/* Contract Value */}
-				<div className="bg-white dark:bg-[#232333] p-4 rounded-2xl border border-slate-200/80 dark:border-[#32344d] shadow-sm">
-					<p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#8f93a7]">Contract Value</p>
-					<p className="text-base font-extrabold text-slate-900 dark:text-slate-100 mt-1">
-						{workOrder ? formatCurrency(contractVal) : <span className="text-slate-300 dark:text-slate-600 text-xs">Loading…</span>}
+				<div className="bg-[#111A30] p-4 rounded-xl border border-white/[0.07] shadow-sm backdrop-blur-md transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg hover:shadow-cyan-500/10">
+					<p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Contract Value</p>
+					<p className="text-base font-extrabold text-slate-100 mt-1">
+						{workOrder ? formatCurrency(contractVal) : <span className="text-slate-500 text-xs">Loading…</span>}
 					</p>
-					<p className="text-[9px] text-slate-400 dark:text-[#8f93a7] mt-0.5 truncate">{workOrder?.name || bill.boq || "—"}</p>
+					<p className="text-[9px] text-slate-400 mt-0.5 truncate">{workOrder?.name || bill.boq || "—"}</p>
 				</div>
 
 				{/* Billed to Date */}
-				<div className="bg-white dark:bg-[#232333] p-4 rounded-2xl border border-slate-200/80 dark:border-[#32344d] shadow-sm">
-					<p className="text-[9px] font-bold uppercase tracking-wider text-indigo-500">Billed to Date</p>
-					<p className="text-base font-extrabold text-indigo-600 dark:text-[#7367f0] mt-1">{formatCurrency(billedToDate)}</p>
-					<p className="text-[9px] text-slate-400 dark:text-[#8f93a7] mt-0.5">{(siblingBills || []).filter((b: any) => b.docstatus === 1).length} submitted bills</p>
+				<div className="bg-[#111A30] p-4 rounded-xl border border-white/[0.07] border-t-2 border-t-cyan-400 shadow-sm backdrop-blur-md transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg hover:shadow-cyan-500/10">
+					<p className="text-[9px] font-bold uppercase tracking-wider text-cyan-400">Billed to Date</p>
+					<p className="text-base font-extrabold text-cyan-400 mt-1">{formatCurrency(billedToDate)}</p>
+					<p className="text-[9px] text-slate-400 mt-0.5">{(siblingBills || []).filter((b: any) => b.docstatus === 1).length} submitted bills</p>
 				</div>
 
 				{/* Balance Pending to Bill */}
-				<div className={`p-4 rounded-2xl border shadow-sm ${
+				<div className={`p-4 rounded-xl border shadow-sm backdrop-blur-md transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg hover:shadow-amber-500/10 ${
 					balancePendingToBill <= 0
 						? "bg-emerald-500/10 border-emerald-500/30"
 						: "bg-amber-500/10 border-amber-500/30"
 				}`}>
-					<p className="text-[9px] font-bold uppercase tracking-wider text-amber-500">Balance Pending</p>
-					<p className="text-base font-extrabold text-amber-600 dark:text-[#ff9f43] mt-1">{formatCurrency(balancePendingToBill)}</p>
-					<p className="text-[9px] text-slate-400 dark:text-[#8f93a7] mt-0.5">= Contract − Billed</p>
+					<p className="text-[9px] font-bold uppercase tracking-wider text-amber-400">Balance Pending</p>
+					<p className="text-base font-extrabold text-amber-400 mt-1">{formatCurrency(balancePendingToBill)}</p>
+					<p className="text-[9px] text-slate-400 mt-0.5">= Contract − Billed</p>
 				</div>
 
 				{/* Advance Disbursed */}
-				<div className="bg-white dark:bg-[#232333] p-4 rounded-2xl border border-slate-200/80 dark:border-[#32344d] shadow-sm">
-					<p className="text-[9px] font-bold uppercase tracking-wider text-emerald-500">Advance Disbursed</p>
-					<p className="text-base font-extrabold text-emerald-600 dark:text-[#28c76f] mt-1">{formatCurrency(totalAdvancesDisbursed)}</p>
-					<p className="text-[9px] text-slate-400 dark:text-[#8f93a7] mt-0.5">Total advances (all types)</p>
+				<div className="bg-[#111A30] p-4 rounded-xl border border-white/[0.07] border-t-2 border-t-emerald-400 shadow-sm backdrop-blur-md transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg hover:shadow-emerald-500/10">
+					<p className="text-[9px] font-bold uppercase tracking-wider text-emerald-400">Advance Disbursed</p>
+					<p className="text-base font-extrabold text-emerald-400 mt-1">{formatCurrency(totalAdvancesDisbursed)}</p>
+					<p className="text-[9px] text-slate-400 mt-0.5">Total advances (all types)</p>
 				</div>
 
 				{/* Advance Recovered */}
-				<div className="bg-white dark:bg-[#232333] p-4 rounded-2xl border border-slate-200/80 dark:border-[#32344d] shadow-sm">
+				<div className="bg-[#111A30] p-4 rounded-xl border border-white/[0.07] shadow-sm backdrop-blur-md transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg hover:shadow-rose-500/10">
 					<p className="text-[9px] font-bold uppercase tracking-wider text-rose-400">Advance Recovered</p>
-					<p className="text-base font-extrabold text-rose-600 dark:text-[#ea5455] mt-1">{formatCurrency(advanceRecoveredToDate)}</p>
-					<p className="text-[9px] text-slate-400 dark:text-[#8f93a7] mt-0.5">Across all bills</p>
+					<p className="text-base font-extrabold text-rose-400 mt-1">{formatCurrency(advanceRecoveredToDate)}</p>
+					<p className="text-[9px] text-slate-400 mt-0.5">Across all bills</p>
 				</div>
 
 				{/* Advance Pending Recovery */}
@@ -1123,22 +1123,22 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 						</div>
 
 						<div>
-							<label className="block text-slate-500 dark:text-[#8f93a7] font-semibold mb-1">Work Order (BOQ)</label>
+							<label className="block text-slate-400 font-semibold mb-1">Work Order (BOQ)</label>
 							<input
 								type="text"
 								value={bill.boq || bill.work_order || ""}
 								readOnly
-								className="w-full p-2.5 bg-slate-100 dark:bg-[#1e1e2d] border border-slate-200 dark:border-[#2d2d3f] rounded-xl text-indigo-600 dark:text-[#7367f0] cursor-not-allowed font-mono font-bold"
+								className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-cyan-400 cursor-not-allowed font-mono font-bold"
 							/>
 						</div>
 
 						<div>
-							<label className="block text-slate-500 dark:text-[#8f93a7] font-semibold mb-1">Bill Type</label>
+							<label className="block text-slate-400 font-semibold mb-1">Bill Type</label>
 							<input
 								type="text"
 								value={bill.bill_type || "Subcontractor"}
 								readOnly
-								className="w-full p-2.5 bg-slate-100 dark:bg-[#1e1e2d] border border-slate-200 dark:border-[#2d2d3f] rounded-xl text-slate-700 dark:text-slate-300 cursor-not-allowed"
+								className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-300 cursor-not-allowed"
 							/>
 						</div>
 					</div>
@@ -1146,24 +1146,24 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 					{/* Right Column */}
 					<div className="space-y-4">
 						<div>
-							<label className="block text-slate-500 dark:text-[#8f93a7] font-semibold mb-1">Posting Date *</label>
+							<label className="block text-slate-400 font-semibold mb-1">Posting Date *</label>
 							<input
 								type="date"
 								disabled={!isDraft}
 								value={postingDate}
 								onChange={(e) => setPostingDate(e.target.value)}
-								className="w-full p-2.5 bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-[#32344d] rounded-xl text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:border-indigo-600"
+								className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl text-slate-100 font-semibold focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 							/>
 						</div>
 
 						<div>
-							<label className="block text-slate-500 dark:text-[#8f93a7] font-semibold mb-1">RA Bill No. *</label>
+							<label className="block text-slate-400 font-semibold mb-1">RA Bill No. *</label>
 							<input
 								type="number"
 								disabled={!isDraft}
 								value={raBillNo === 0 ? "" : raBillNo}
 								onChange={(e) => setRaBillNo(e.target.value === "" ? "" : Number(e.target.value))}
-								className="w-full p-2.5 bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-[#32344d] rounded-xl font-bold text-indigo-600 dark:text-[#7367f0] focus:outline-none"
+								className="w-full p-2.5 bg-[#0E1726] border border-slate-700/60 rounded-xl font-bold text-cyan-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
 							/>
 						</div>
 
@@ -1174,9 +1174,9 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 								disabled={!isDraft}
 								checked={isFinalBill}
 								onChange={(e) => setIsFinalBill(e.target.checked)}
-								className="w-4 h-4 rounded text-indigo-600 focus:ring-0 cursor-pointer"
+								className="w-4 h-4 rounded bg-[#0E1726] border-slate-700/60 text-cyan-500 focus:ring-0 cursor-pointer"
 							/>
-							<label htmlFor="isFinalBillDetail" className="font-bold text-slate-800 dark:text-slate-200 cursor-pointer">
+							<label htmlFor="isFinalBillDetail" className="font-bold text-slate-200 cursor-pointer">
 								Is Final Bill
 							</label>
 						</div>
@@ -1185,11 +1185,11 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 			</div>
 
 			{/* 3. MEASURED ITEMS TABLE (`items`) */}
-			<div className="bg-white dark:bg-[#232333] border border-slate-200/80 dark:border-[#32344d] rounded-2xl overflow-hidden shadow-sm space-y-0">
-				<div className="p-5 border-b border-slate-200 dark:border-[#32344d] flex flex-wrap justify-between items-center gap-3">
+			<div className="bg-[#111A30] border border-white/[0.07] rounded-xl overflow-hidden shadow-sm space-y-0 backdrop-blur-md">
+				<div className="p-5 border-b border-slate-800 flex flex-wrap justify-between items-center gap-3">
 					<div>
-						<h3 className="font-bold text-base text-slate-900 dark:text-slate-100">Measured Items (Cumulative)</h3>
-						<p className="text-xs text-slate-500 dark:text-[#8f93a7]">Type billed quantity directly or open Row Editor for item details</p>
+						<h3 className="font-bold text-base text-slate-100">Measured Items (Cumulative)</h3>
+						<p className="text-xs text-slate-400">Type billed quantity directly or open Row Editor for item details</p>
 					</div>
 
 					<div className="flex flex-wrap items-center gap-2">
@@ -1197,7 +1197,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 						<button
 							type="button"
 							onClick={handleDownloadItemsCSV}
-							className="px-3 py-1.5 bg-white dark:bg-[#1e1e2d] hover:bg-slate-100 dark:hover:bg-[#282a42] text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl border border-slate-200 dark:border-[#32344d] transition flex items-center gap-1.5"
+							className="px-3 py-1.5 bg-[#0E1726] hover:bg-slate-800 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700/60 transition flex items-center gap-1.5 cursor-pointer"
 							title="Download current items as CSV"
 						>
 							<Download size={13} /> Export CSV
@@ -1209,7 +1209,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 								<button
 									type="button"
 									onClick={() => itemsFileInputRef.current?.click()}
-									className="px-3 py-1.5 bg-indigo-50 dark:bg-[#7367f0]/15 hover:bg-indigo-100 dark:hover:bg-[#7367f0]/25 text-indigo-600 dark:text-[#7367f0] text-xs font-semibold rounded-xl border border-indigo-200 dark:border-[#7367f0]/30 transition flex items-center gap-1.5"
+									className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-xs font-semibold rounded-xl border border-cyan-500/30 transition flex items-center gap-1.5 cursor-pointer"
 									title="Import measured quantities from CSV"
 								>
 									<Upload size={13} /> Import CSV
@@ -1223,7 +1223,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 								/>
 								<button
 									onClick={handleAddItemRow}
-									className="px-3.5 py-2 bg-indigo-600 dark:bg-[#7367f0] hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+									className="px-3.5 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow-md shadow-cyan-900/40 hover:shadow-cyan-500/30 transition flex items-center gap-1.5 cursor-pointer"
 								>
 									<Plus size={14} /> Add Item Row
 								</button>
@@ -1234,7 +1234,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 
 				<div className="overflow-x-auto">
 					<table className="w-full text-left text-xs">
-						<thead className="bg-slate-100 dark:bg-[#1e1e2d] text-slate-600 dark:text-[#8f93a7] uppercase font-bold border-b border-slate-200 dark:border-[#32344d]">
+						<thead className="bg-[#0E1726] text-slate-400 uppercase font-semibold text-xs tracking-wider border-b border-slate-800">
 							<tr>
 								<th className="p-3.5 w-10">No.</th>
 								<th className="p-3.5">Item Code / Description</th>
@@ -1243,15 +1243,15 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 								<th className="p-3.5 text-right">Rate (INR)</th>
 								<th className="p-3.5 text-right">Previous Qty</th>
 								<th className="p-3.5 text-right">This Bill Qty *</th>
-								<th className="p-3.5 text-right text-rose-600 dark:text-rose-400">Reject Qty</th>
-								<th className="p-3.5 text-right text-emerald-600 dark:text-emerald-400">Approved Qty</th>
-								<th className="p-3.5 text-right text-amber-600 dark:text-amber-400">Hold Qty</th>
+								<th className="p-3.5 text-right text-rose-400">Reject Qty</th>
+								<th className="p-3.5 text-right text-emerald-400">Approved Qty</th>
+								<th className="p-3.5 text-right text-amber-400">Hold Qty</th>
 								<th className="p-3.5 text-right">Cumulative Qty</th>
 								<th className="p-3.5 text-right">This Bill Amount</th>
 								<th className="p-3.5 text-center">Row Editor</th>
 							</tr>
 						</thead>
-						<tbody className="divide-y divide-slate-200/80 dark:divide-[#2d2d3f]">
+						<tbody className="divide-y divide-slate-800/60">
 							{items && items.length > 0 ? (
 								items.map((it: any, idx: number) => {
 									const isRowEditing = editingRowIndex === idx;
@@ -1270,9 +1270,9 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 
 									return (
 										<React.Fragment key={idx}>
-											<tr className="hover:bg-slate-50/80 dark:hover:bg-[#1e1e2d]/70 transition">
+											<tr className="border-b border-slate-800/60 hover:bg-cyan-500/5 transition">
 												<td className="p-3.5 text-slate-400 font-semibold">{idx + 1}</td>
-												<td className="p-3.5 text-slate-800 dark:text-slate-200 max-w-xs">
+												<td className="p-3.5 text-slate-200 max-w-xs">
 													<ItemLinkDropdown
 														value={it.item_code || ""}
 														onChange={(sel) => {
@@ -1281,10 +1281,10 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 															handleItemChange(idx, "uom", sel.uom);
 														}}
 													/>
-													<p className="text-[11px] text-slate-500 dark:text-[#8f93a7] mt-1 line-clamp-2">{it.description}</p>
+													<p className="text-[11px] text-slate-400 mt-1 line-clamp-2">{it.description}</p>
 												</td>
-												<td className="p-3.5 font-mono text-slate-600 dark:text-slate-300">{it.uom || "Nos"}</td>
-												<td className="p-3.5 text-right font-mono font-medium text-slate-700 dark:text-slate-300">
+												<td className="p-3.5 font-mono text-slate-300">{it.uom || "Nos"}</td>
+												<td className="p-3.5 text-right font-mono font-medium text-slate-300">
 													{it.boq_qty ?? 0}
 												</td>
 												<td className="p-3.5 text-right">
@@ -1294,7 +1294,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 															step="any"
 															value={it.rate === 0 ? "" : (it.rate ?? "")}
 															onChange={(e) => handleItemChange(idx, "rate", e.target.value === "" ? 0 : Number(e.target.value))}
-															className="w-24 p-1.5 bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-[#32344d] rounded-lg font-mono text-right text-slate-900 dark:text-slate-100"
+															className="w-24 p-1.5 bg-[#0E1726] border border-slate-700/60 rounded-lg font-mono text-right text-slate-100"
 														/>
 													) : (
 														<span className="font-mono font-medium">{formatCurrency(it.rate)}</span>
@@ -1310,11 +1310,11 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 															step="any"
 															value={it.this_bill_qty === 0 ? "" : (it.this_bill_qty ?? "")}
 															onChange={(e) => handleItemChange(idx, "this_bill_qty", e.target.value === "" ? 0 : Number(e.target.value))}
-															className="w-24 p-1.5 bg-white dark:bg-[#1e1e2d] border-2 border-indigo-500/60 dark:border-[#7367f0] rounded-lg font-mono font-bold text-right text-indigo-600 dark:text-[#7367f0] focus:outline-none"
+															className="w-24 p-1.5 bg-[#0E1726] border-2 border-cyan-400/80 rounded-lg font-mono font-bold text-right text-cyan-400 focus:outline-none"
 															placeholder="0"
 														/>
 													) : (
-														<span className="font-mono font-bold text-indigo-600 dark:text-[#7367f0]">
+														<span className="font-mono font-bold text-cyan-400">
 															{thisBillQty}
 														</span>
 													)}
@@ -1328,18 +1328,18 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 															step="any"
 															value={it.reject_qty === 0 ? "" : (it.reject_qty ?? "")}
 															onChange={(e) => handleItemChange(idx, "reject_qty", e.target.value === "" ? 0 : Number(e.target.value))}
-															className="w-20 p-1.5 bg-white dark:bg-[#1e1e2d] border border-rose-300 dark:border-rose-500/40 rounded-lg font-mono font-bold text-right text-rose-600 dark:text-rose-400 focus:outline-none"
+															className="w-20 p-1.5 bg-[#0E1726] border border-rose-500/40 rounded-lg font-mono font-bold text-right text-rose-400 focus:outline-none"
 															placeholder="0"
 														/>
 													) : (
-														<span className="font-mono font-semibold text-rose-600 dark:text-rose-400">
+														<span className="font-mono font-semibold text-rose-400">
 															{rejectQty}
 														</span>
 													)}
 												</td>
 
 												{/* Approved Qty (Read-Only: This Bill - Reject) */}
-												<td className="p-3.5 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+												<td className="p-3.5 text-right font-mono font-bold text-emerald-400">
 													{approvedQty}
 												</td>
 
@@ -1351,26 +1351,26 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 															step="any"
 															value={it.hold_qty === 0 ? "" : (it.hold_qty ?? "")}
 															onChange={(e) => handleItemChange(idx, "hold_qty", e.target.value === "" ? 0 : Number(e.target.value))}
-															className="w-20 p-1.5 bg-white dark:bg-[#1e1e2d] border border-amber-300 dark:border-amber-500/40 rounded-lg font-mono font-bold text-right text-amber-600 dark:text-amber-400 focus:outline-none"
+															className="w-20 p-1.5 bg-[#0E1726] border border-amber-500/40 rounded-lg font-mono font-bold text-right text-amber-400 focus:outline-none"
 															placeholder="0"
 														/>
 													) : (
 														<div>
 															{hadHold && isRowFullyPaid ? (
-																<span className="inline-block text-[11px] font-extrabold text-emerald-600 dark:text-[#28c76f]">
+																<span className="inline-block text-[11px] font-extrabold text-emerald-400">
 																	✓ Paid
 																</span>
 															) : hadHold && isRowPartiallyPaid ? (
 																<div>
-																	<span className="font-mono font-semibold text-amber-600 dark:text-amber-400">
+																	<span className="font-mono font-semibold text-amber-400">
 																		{holdQty}
 																	</span>
-																	<span className="block text-[9px] font-bold text-amber-500 dark:text-[#ff9f43] mt-0.5">
+																	<span className="block text-[9px] font-bold text-amber-400 mt-0.5">
 																		{holdQty} pending
 																	</span>
 																</div>
 															) : (
-																<span className="font-mono font-semibold text-amber-600 dark:text-amber-400">
+																<span className="font-mono font-semibold text-amber-400">
 																	{holdQty}
 																</span>
 															)}
@@ -1379,12 +1379,12 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 												</td>
 
 												{/* Cumulative Qty — auto-calculated (Previous + Approved) */}
-												<td className="p-3.5 text-right font-mono font-bold text-slate-700 dark:text-slate-300">
+												<td className="p-3.5 text-right font-mono font-bold text-slate-300">
 													{cumulativeQty}
 												</td>
 
 												{/* This Bill Amount = approved_qty × rate */}
-												<td className="p-3.5 text-right font-mono font-bold text-indigo-600 dark:text-[#7367f0]">
+												<td className="p-3.5 text-right font-mono font-bold text-cyan-400">
 													{formatCurrency(billAmount)}
 												</td>
 
@@ -1392,7 +1392,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 													<button
 														type="button"
 														onClick={() => setEditingRowIndex(isRowEditing ? null : idx)}
-														className="p-1.5 bg-slate-100 dark:bg-[#1e1e2d] hover:bg-indigo-50 dark:hover:bg-[#7367f0]/20 text-slate-500 dark:text-[#8f93a7] hover:text-indigo-600 dark:hover:text-[#7367f0] rounded-lg transition"
+														className="p-1.5 bg-[#0E1726] hover:bg-cyan-500/20 text-slate-400 hover:text-cyan-400 border border-slate-700/60 rounded-lg transition cursor-pointer"
 														title="Open Editing Row Card"
 													>
 														<Edit3 size={15} />
@@ -1403,7 +1403,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 											{/* Standard ERPNext Child Table Inline Row Editor ("Editing Row #X") */}
 											{isRowEditing && (
 												<tr>
-													<td colSpan={13} className="p-0 border-b-2 border-indigo-500">
+													<td colSpan={13} className="p-0 border-b-2 border-cyan-400">
 														<RowEditorModal
 															rowIndex={idx}
 															totalRows={items.length}
@@ -1465,58 +1465,58 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 							<span className="font-mono font-semibold text-slate-800 dark:text-slate-200">{formatCurrency(otherAdditionsTotal)}</span>
 						</div>
 						<div className="pt-2 flex justify-between items-center">
-							<span className="font-bold text-slate-800 dark:text-slate-200">Billable Value (Taxable Base):</span>
-							<span className="font-mono font-black text-indigo-600 dark:text-[#7367f0] text-sm">{formatCurrency(billableValue)}</span>
+							<span className="font-bold text-slate-200">Billable Value (Taxable Base):</span>
+							<span className="font-mono font-black text-cyan-400 text-sm">{formatCurrency(billableValue)}</span>
 						</div>
 					</div>
 
 					{/* Right Column */}
-					<div className="space-y-3 bg-slate-50 dark:bg-[#1e1e2d] p-5 rounded-xl border border-slate-200/70 dark:border-[#2d2d3f]">
-						<div className="flex justify-between items-center border-b border-slate-200 dark:border-[#2d2d3f] pb-2">
-							<span className="text-slate-600 dark:text-[#8f93a7]">Apply GST:</span>
+					<div className="space-y-3 bg-[#0E1726] p-5 rounded-xl border border-slate-700/60">
+						<div className="flex justify-between items-center border-b border-slate-800 pb-2">
+							<span className="text-slate-400">Apply GST:</span>
 							<div className="flex items-center gap-2">
 								<input
 									type="checkbox"
 									disabled={!isDraft}
 									checked={applyGst}
 									onChange={(e) => setApplyGst(e.target.checked)}
-									className="rounded text-indigo-600 focus:ring-0 cursor-pointer"
+									className="w-4 h-4 rounded bg-[#0E1726] border-slate-700/60 text-cyan-500 focus:ring-0 cursor-pointer"
 								/>
-								<span className="font-semibold">{applyGst ? "Yes" : "No"}</span>
+								<span className="font-semibold text-slate-200">{applyGst ? "Yes" : "No"}</span>
 							</div>
 						</div>
-						<div className="flex justify-between items-center border-b border-slate-200 dark:border-[#2d2d3f] pb-2">
-							<span className="text-slate-600 dark:text-[#8f93a7]">GST %:</span>
+						<div className="flex justify-between items-center border-b border-slate-800 pb-2">
+							<span className="text-slate-400">GST %:</span>
 							{isDraft ? (
 								<input
 									type="number"
 									step="any"
 									value={gstPercentage === 0 ? "" : gstPercentage}
 									onChange={(e) => setGstPercentage(e.target.value === "" ? 0 : Number(e.target.value))}
-									className="w-20 p-1 bg-white dark:bg-[#232333] border border-slate-200 dark:border-[#32344d] rounded font-mono text-right"
+									className="w-20 p-1 bg-[#0E1726] border border-slate-700/60 rounded font-mono text-right text-slate-100 focus:outline-none focus:border-cyan-400"
 								/>
 							) : (
-								<span className="font-mono font-bold">{gstPercentage}%</span>
+								<span className="font-mono font-bold text-slate-200">{gstPercentage}%</span>
 							)}
 						</div>
-						<div className="flex justify-between items-center border-b border-slate-200 dark:border-[#2d2d3f] pb-2">
-							<span className="text-slate-600 dark:text-[#8f93a7]">GST Amount (Live):</span>
-							<span className="font-mono font-bold text-slate-900 dark:text-slate-100">{formatCurrency(gstAmount)}</span>
+						<div className="flex justify-between items-center border-b border-slate-800 pb-2">
+							<span className="text-slate-400">GST Amount (Live):</span>
+							<span className="font-mono font-bold text-slate-100">{formatCurrency(gstAmount)}</span>
 						</div>
 						<div className="pt-2 flex justify-between items-center">
-							<span className="font-bold text-slate-800 dark:text-slate-200">Total Invoice Value:</span>
-							<span className="font-mono font-black text-indigo-600 dark:text-[#7367f0] text-sm">{formatCurrency(totalInvoiceValue)}</span>
+							<span className="font-bold text-slate-200">Total Invoice Value:</span>
+							<span className="font-mono font-black text-cyan-400 text-sm">{formatCurrency(totalInvoiceValue)}</span>
 						</div>
 					</div>
 				</div>
 			</div>
 
 			{/* 5. DEDUCTIONS & RECOVERIES TABLE (`deductions`) */}
-			<div className="bg-white dark:bg-[#232333] border border-slate-200/80 dark:border-[#32344d] rounded-2xl overflow-hidden shadow-sm space-y-0">
-				<div className="p-5 border-b border-slate-200 dark:border-[#32344d] flex justify-between items-center">
+			<div className="bg-[#111A30] border border-white/[0.07] rounded-xl overflow-hidden shadow-sm space-y-0 backdrop-blur-md">
+				<div className="p-5 border-b border-slate-800 flex justify-between items-center">
 					<div>
-						<h3 className="font-bold text-base text-slate-900 dark:text-slate-100">Deductions & Recoveries</h3>
-						<p className="text-xs text-slate-500 dark:text-[#8f93a7]">Calculated dynamically based on rate % or fixed amounts</p>
+						<h3 className="font-bold text-base text-slate-100">Deductions & Recoveries</h3>
+						<p className="text-xs text-slate-400">Calculated dynamically based on rate % or fixed amounts</p>
 					</div>
 
 					{isDraft && (
@@ -1527,7 +1527,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 									{ deduction_type: "Other", description: "Other Recovery", method: "Percentage", calculation_method: "Percentage", rate: 0, amount: 0 },
 								])
 							}
-							className="px-3.5 py-1.5 bg-slate-100 dark:bg-[#1e1e2d] hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition flex items-center gap-1"
+							className="px-3.5 py-1.5 bg-[#0E1726] hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold border border-slate-700/60 transition flex items-center gap-1 cursor-pointer"
 						>
 							<Plus size={14} /> Add Deduction Row
 						</button>
@@ -1538,7 +1538,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 					<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-xs">
 						<div className="lg:col-span-2 overflow-x-auto">
 							<table className="w-full text-left text-xs">
-								<thead className="bg-slate-100 dark:bg-[#1e1e2d] text-slate-600 dark:text-[#8f93a7] uppercase font-bold border-b border-slate-200 dark:border-[#32344d]">
+								<thead className="bg-[#0E1726] text-slate-400 uppercase font-semibold text-xs tracking-wider border-b border-slate-800">
 									<tr>
 										<th className="p-3 w-10">No.</th>
 										<th className="p-3">Deduction Type</th>
@@ -1548,18 +1548,18 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 										{isDraft && <th className="p-3 text-center">Action</th>}
 									</tr>
 								</thead>
-								<tbody className="divide-y divide-slate-200 dark:divide-[#2d2d3f]">
+								<tbody className="divide-y divide-slate-800/60">
 									{updatedDeductions && updatedDeductions.length > 0 ? (
 										updatedDeductions.map((d: any, idx: number) => (
-											<tr key={idx} className="hover:bg-slate-50/80 dark:hover:bg-[#1e1e2d]/70 transition">
+											<tr key={idx} className="border-b border-slate-800/60 hover:bg-cyan-500/5 transition">
 												<td className="p-3 text-slate-400 font-semibold">{idx + 1}</td>
-												<td className="p-3 font-bold text-slate-900 dark:text-slate-100">
+												<td className="p-3 font-bold text-slate-100">
 													<div>{d.description || d.deduction_type}</div>
 													{d.description && d.description !== d.deduction_type && (
 														<span className="text-[10px] text-slate-400 font-normal block">{d.deduction_type}</span>
 													)}
 												</td>
-												<td className="p-3 text-slate-500">{d.calculation_method || d.method || "Percentage"}</td>
+												<td className="p-3 text-slate-400">{d.calculation_method || d.method || "Percentage"}</td>
 												<td className="p-3 text-right font-mono">
 													{isDraft ? (
 														<div className="flex items-center justify-end gap-1">
@@ -1576,22 +1576,22 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 																		)
 																	);
 																}}
-																className="w-20 p-1 bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-[#32344d] rounded-lg font-mono text-right text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-600 dark:focus:border-[#7367f0]"
+																className="w-20 p-1 bg-[#0E1726] border border-slate-700/60 rounded-lg font-mono text-right text-xs text-slate-100 focus:outline-none focus:border-cyan-400"
 															/>
-															<span className="text-slate-500 font-mono">%</span>
+															<span className="text-slate-400 font-mono">%</span>
 														</div>
 													) : (
-														<span>{d.rate || 0}%</span>
+														<span className="text-slate-200">{d.rate || 0}%</span>
 													)}
 												</td>
-												<td className="p-3 text-right font-mono font-bold text-rose-600 dark:text-[#ea5455]">
+												<td className="p-3 text-right font-mono font-bold text-rose-400">
 													-{formatCurrency(d.amount)}
 												</td>
 												{isDraft && (
 													<td className="p-3 text-center">
 														<button
 															onClick={() => setDeductions(deductions.filter((_, i) => i !== idx))}
-															className="text-rose-500 hover:text-rose-700"
+															className="text-rose-400 hover:text-rose-300 cursor-pointer"
 														>
 															<Trash2 size={14} />
 														</button>
@@ -1608,25 +1608,25 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 							</table>
 						</div>
 
-						<div className="bg-slate-50 dark:bg-[#1e1e2d] p-5 rounded-xl border border-slate-200/70 dark:border-[#2d2d3f] space-y-3">
-							<h4 className="font-bold text-xs text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-[#2d2d3f] pb-2">
+						<div className="bg-[#0E1726] p-5 rounded-xl border border-slate-700/60 space-y-3">
+							<h4 className="font-bold text-xs text-slate-200 border-b border-slate-800 pb-2">
 								Live Net Payable Summary
 							</h4>
-							<div className="flex justify-between items-center text-slate-600 dark:text-[#8f93a7]">
+							<div className="flex justify-between items-center text-slate-400">
 								<span>Total Deductions:</span>
-								<span className="font-mono font-bold text-rose-600 dark:text-[#ea5455]">-{formatCurrency(totalDeductions)}</span>
+								<span className="font-mono font-bold text-rose-400">-{formatCurrency(totalDeductions)}</span>
 							</div>
-							<div className="border-t border-dashed border-slate-300 dark:border-[#32344d] pt-3 mt-3 flex justify-between items-center">
-								<span className="font-bold text-slate-800 dark:text-slate-200">Net Payable Amount:</span>
-								<span className="font-mono font-black text-indigo-600 dark:text-[#7367f0] text-base">{formatCurrency(netPayable)}</span>
+							<div className="border-t border-dashed border-slate-800 pt-3 mt-3 flex justify-between items-center">
+								<span className="font-bold text-slate-200">Net Payable Amount:</span>
+								<span className="font-mono font-black text-cyan-400 text-base">{formatCurrency(netPayable)}</span>
 							</div>
 							{totalHoldValue > 0 && (
-								<div className="space-y-1.5 pt-2.5 border-t border-slate-200 dark:border-[#32344d] text-xs">
-									<div className="flex justify-between text-emerald-600 dark:text-[#28c76f] font-semibold">
+								<div className="space-y-1.5 pt-2.5 border-t border-slate-800 text-xs">
+									<div className="flex justify-between text-emerald-400 font-semibold">
 										<span>Immediately Payable:</span>
 										<span className="font-mono font-bold">{formatCurrency(immediatelyPayable)}</span>
 									</div>
-									<div className="flex justify-between text-amber-600 dark:text-amber-400 font-semibold">
+									<div className="flex justify-between text-amber-400 font-semibold">
 										<span>Deferred (Hold Portion):</span>
 										<span className="font-mono font-bold">{formatCurrency(deferredHold)}</span>
 									</div>
@@ -1634,19 +1634,19 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 							)}
 							{/* Running Advance Recovery note */}
 							{totalAdvancesDisbursed > 0 && (
-								<div className="mt-3 pt-3 border-t border-dashed border-slate-300 dark:border-[#32344d] space-y-1.5 text-[10px]">
-									<p className="font-bold text-slate-500 dark:text-[#8f93a7] uppercase tracking-wider">Advance Recovery Tracker</p>
+								<div className="mt-3 pt-3 border-t border-dashed border-slate-800 space-y-1.5 text-[10px]">
+									<p className="font-bold text-slate-400 uppercase tracking-wider">Advance Recovery Tracker</p>
 									<div className="flex justify-between">
-										<span className="text-slate-500">Total Disbursed:</span>
-										<span className="font-mono font-semibold text-emerald-600 dark:text-[#28c76f]">{formatCurrency(totalAdvancesDisbursed)}</span>
+										<span className="text-slate-400">Total Disbursed:</span>
+										<span className="font-mono font-semibold text-emerald-400">{formatCurrency(totalAdvancesDisbursed)}</span>
 									</div>
 									<div className="flex justify-between">
-										<span className="text-slate-500">Recovered to Date:</span>
-										<span className="font-mono font-semibold text-rose-600 dark:text-[#ea5455]">-{formatCurrency(advanceRecoveredToDate)}</span>
+										<span className="text-slate-400">Recovered to Date:</span>
+										<span className="font-mono font-semibold text-rose-400">-{formatCurrency(advanceRecoveredToDate)}</span>
 									</div>
-									<div className="flex justify-between border-t border-slate-200 dark:border-[#32344d] pt-1.5">
-										<span className="font-bold text-slate-700 dark:text-slate-200">Still Outstanding:</span>
-										<span className={`font-mono font-black ${ advancePending <= 0 ? "text-emerald-600 dark:text-[#28c76f]" : "text-rose-700 dark:text-[#ea5455]"}`}>{formatCurrency(advancePending)}</span>
+									<div className="flex justify-between border-t border-slate-800 pt-1.5">
+										<span className="font-bold text-slate-300">Still Outstanding:</span>
+										<span className={`font-mono font-black ${ advancePending <= 0 ? "text-emerald-400" : "text-rose-400"}`}>{formatCurrency(advancePending)}</span>
 									</div>
 								</div>
 							)}
@@ -1657,19 +1657,19 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 
 			{/* 6. ALL RA BILLS FOR THIS WORK ORDER (Drill-down list) */}
 			{woName && siblingBills && siblingBills.length > 0 && (
-				<div className="bg-white dark:bg-[#232333] border border-slate-200/80 dark:border-[#32344d] rounded-2xl overflow-hidden shadow-sm">
-					<div className="p-5 border-b border-slate-200 dark:border-[#32344d] flex justify-between items-center">
+				<div className="bg-[#111A30] border border-white/[0.07] rounded-xl overflow-hidden shadow-sm backdrop-blur-md">
+					<div className="p-5 border-b border-slate-800 flex justify-between items-center">
 						<div>
-							<h3 className="font-bold text-base text-slate-900 dark:text-slate-100">All RA Bills — {woName}</h3>
-							<p className="text-xs text-slate-500 dark:text-[#8f93a7]">All non-cancelled bills for this Work Order. Click a row to open it.</p>
+							<h3 className="font-bold text-base text-slate-100">All RA Bills — {woName}</h3>
+							<p className="text-xs text-slate-400">All non-cancelled bills for this Work Order. Click a row to open it.</p>
 						</div>
-						<span className="text-xs font-bold bg-indigo-50 dark:bg-[#7367f0]/15 text-indigo-600 dark:text-[#7367f0] px-3 py-1 rounded-full border border-indigo-200 dark:border-[#7367f0]/30">
+						<span className="text-xs font-bold bg-cyan-500/10 text-cyan-400 px-3 py-1 rounded-full border border-cyan-500/30">
 							{siblingBills.length} Bill(s)
 						</span>
 					</div>
 					<div className="overflow-x-auto">
 						<table className="w-full text-left text-xs">
-							<thead className="bg-slate-100 dark:bg-[#1e1e2d] text-slate-600 dark:text-[#8f93a7] uppercase font-bold border-b border-slate-200 dark:border-[#32344d]">
+							<thead className="bg-[#0E1726] text-slate-400 uppercase font-semibold text-xs tracking-wider border-b border-slate-800">
 								<tr>
 									<th className="p-3.5">Bill ID</th>
 									<th className="p-3.5">RA Bill No</th>
@@ -1679,7 +1679,7 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 									<th className="p-3.5">Status</th>
 								</tr>
 							</thead>
-							<tbody className="divide-y divide-slate-200/80 dark:divide-[#2d2d3f]">
+							<tbody className="divide-y divide-slate-800/60">
 								{(siblingBills as any[]).map((b) => {
 									const isCurrent = b.name === billId;
 									const stateLabel = b.workflow_state || (b.docstatus === 1 ? "Approved" : b.docstatus === 2 ? "Cancelled" : "Draft");
@@ -1689,27 +1689,36 @@ export function RABillDetail({ billId, onBack, onCreateInvoiceSuccess, onSelectB
 											onClick={() => {
 												if (!isCurrent && onSelectBill) onSelectBill(b.name);
 											}}
-											className={`transition ${
+											className={`border-b border-slate-800/60 transition ${
 												isCurrent
-													? "bg-indigo-50/60 dark:bg-[#7367f0]/10 border-l-4 border-indigo-500"
-													: onSelectBill ? "hover:bg-slate-50/80 dark:hover:bg-[#1e1e2d]/70 cursor-pointer group" : ""
+													? "bg-cyan-500/10 border-l-4 border-cyan-400"
+													: onSelectBill ? "hover:bg-cyan-500/5 cursor-pointer group" : ""
 											}`}
 										>
-											<td className={`p-3.5 font-mono font-bold ${ isCurrent ? "text-indigo-700 dark:text-[#7367f0]" : "text-indigo-600 dark:text-[#7367f0] group-hover:underline"}`}>
-												{b.name}{isCurrent && <span className="ml-1.5 text-[9px] bg-indigo-500 text-white px-1.5 py-0.5 rounded-full align-middle">Current</span>}
+											<td className={`p-3.5 font-mono font-bold ${ isCurrent ? "text-cyan-400" : "text-cyan-400 group-hover:underline"}`}>
+												{b.name}{isCurrent && <span className="ml-1.5 text-[9px] bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-1.5 py-0.5 rounded-full align-middle">Current</span>}
 											</td>
-											<td className="p-3.5 font-semibold text-slate-800 dark:text-slate-200">RA #{b.ra_bill_no || "—"}</td>
-											<td className="p-3.5 text-slate-600 dark:text-[#8f93a7]">{b.posting_date || "—"}</td>
-											<td className="p-3.5 text-right font-medium text-slate-900 dark:text-slate-100">{formatCurrency(b.gross_work_value)}</td>
-											<td className="p-3.5 text-right font-bold text-indigo-600 dark:text-[#7367f0]">{formatCurrency(b.net_payable)}</td>
+											<td className="p-3.5 font-semibold text-slate-200">RA #{b.ra_bill_no || "—"}</td>
+											<td className="p-3.5 text-slate-400">{b.posting_date || "—"}</td>
+											<td className="p-3.5 text-right font-medium text-slate-100">{formatCurrency(b.gross_work_value)}</td>
+											<td className="p-3.5 text-right font-bold text-cyan-400">{formatCurrency(b.net_payable)}</td>
 											<td className="p-3.5">
-												<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+												<span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
 													stateLabel.toLowerCase().includes("approved") || stateLabel.toLowerCase().includes("submitted")
-														? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30"
+														? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
 														: stateLabel.toLowerCase().includes("draft")
-															? "bg-amber-500/15 text-amber-600 border-amber-500/30"
-															: "bg-indigo-500/15 text-indigo-600 border-indigo-500/30"
-												}`}>{stateLabel}</span>
+															? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+															: "bg-cyan-500/10 text-cyan-400 border-cyan-500/30"
+												}`}>
+													<span className={`h-1.5 w-1.5 rounded-full ${
+														stateLabel.toLowerCase().includes("approved") || stateLabel.toLowerCase().includes("submitted")
+															? "bg-emerald-400 animate-pulse"
+															: stateLabel.toLowerCase().includes("draft")
+																? "bg-amber-400"
+																: "bg-cyan-400"
+													}`}></span>
+													{stateLabel}
+												</span>
 											</td>
 										</tr>
 									);
