@@ -107,16 +107,27 @@ def get_data(filters):
 	)
 	adv_pe_names = [a.payment_entry for a in wo_advances if a.payment_entry]
 
-	# 2. Identify all Payment Entries linked to the selected RAB Work Order (not cancelled):
+	# 2. Identify all Payment Entries linked to the selected RAB Work Order (not cancelled).
+	# Detect which column name the Work Order link is stored under on tabPayment Entry.
+	# Customize Form creates fields as `custom_<fieldname>`; a native field would be `work_order`.
+	_wo_col = None
+	if frappe.db.has_column("Payment Entry", "custom_work_order"):
+		_wo_col = "custom_work_order"
+	elif frappe.db.has_column("Payment Entry", "work_order"):
+		_wo_col = "work_order"
+
+	_wo_clause = f"OR pe.`{_wo_col}` = %s" if _wo_col else ""
+	_wo_params = (rab_work_order,) if _wo_col else ()
+
 	pes = (
 		frappe.db.sql(
-			"""
+			f"""
 			SELECT DISTINCT pe.name, pe.posting_date, pe.payment_type, pe.paid_amount, pe.received_amount, pe.is_mobilization_advance, pe.is_adhoc_advance, pe.creation, pe.docstatus, pe.mode_of_payment, pe.paid_from, pe.paid_to
 			FROM `tabPayment Entry` pe
 			LEFT JOIN `tabPayment Entry Reference` per ON per.parent = pe.name
 			WHERE pe.docstatus != 2 AND (
 				(per.reference_doctype = 'RAB Work Order' AND per.reference_name = %s)
-				OR pe.work_order = %s
+				{_wo_clause}
 				OR (
 					per.reference_doctype = 'Purchase Invoice'
 					AND per.reference_name IN %s
@@ -129,7 +140,7 @@ def get_data(filters):
 			)
 			ORDER BY pe.posting_date ASC, pe.creation ASC
 			""",
-			(rab_work_order, rab_work_order, tuple(pi_names or [""]), tuple(rab_names or [""]), tuple(adv_pe_names or [""])),
+			(rab_work_order, *_wo_params, tuple(pi_names or [""]), tuple(rab_names or [""]), tuple(adv_pe_names or [""])),
 			as_dict=True,
 		)
 		or []
@@ -414,15 +425,25 @@ def get_summary_metrics(rab_work_order):
 	)
 	adv_pe_names = [a.payment_entry for a in wo_advances if a.payment_entry]
 
+	# Detect work-order column name (same logic as get_data; cached by frappe.db.has_column).
+	_wo_col_s = None
+	if frappe.db.has_column("Payment Entry", "custom_work_order"):
+		_wo_col_s = "custom_work_order"
+	elif frappe.db.has_column("Payment Entry", "work_order"):
+		_wo_col_s = "work_order"
+
+	_wo_clause_s = f"OR pe.`{_wo_col_s}` = %s" if _wo_col_s else ""
+	_wo_params_s = (rab_work_order,) if _wo_col_s else ()
+
 	pes = (
 		frappe.db.sql(
-			"""
+			f"""
 			SELECT DISTINCT pe.name
 			FROM `tabPayment Entry` pe
 			LEFT JOIN `tabPayment Entry Reference` per ON per.parent = pe.name
 			WHERE pe.docstatus = 1 AND (
 				(per.reference_doctype = 'RAB Work Order' AND per.reference_name = %s)
-				OR pe.work_order = %s
+				{_wo_clause_s}
 				OR (
 					per.reference_doctype = 'Purchase Invoice'
 					AND per.reference_name IN %s
@@ -434,7 +455,7 @@ def get_summary_metrics(rab_work_order):
 				OR pe.name IN %s
 			)
 			""",
-			(rab_work_order, rab_work_order, tuple(pi_names or [""]), tuple(rab_names or [""]), tuple(adv_pe_names or [""])),
+			(rab_work_order, *_wo_params_s, tuple(pi_names or [""]), tuple(rab_names or [""]), tuple(adv_pe_names or [""])),
 			as_dict=True,
 		)
 		or []
