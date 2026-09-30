@@ -660,18 +660,27 @@ class RABill(Document):
 			if adv_sum > 0:
 				return adv_sum
 
-		# 3. Sum direct Payment Entries linked via work_order field
-		pe_direct = frappe.db.sql(
-			"""
-			SELECT COALESCE(SUM(paid_amount), 0.0)
-			FROM `tabPayment Entry`
-			WHERE work_order = %s AND is_mobilization_advance = 1 AND docstatus = 1
-			""",
-			(self.boq,),
-		)
-		total_pe_direct = flt(pe_direct[0][0]) if pe_direct else 0.0
-		if total_pe_direct > 0:
-			return total_pe_direct
+		# 3. Sum direct Payment Entries linked via work_order/custom_work_order field.
+		# Customize Form creates the field as `custom_work_order`; a native field would be
+		# `work_order`. Detect which one (if any) exists before issuing the query.
+		_wo_col = None
+		if frappe.db.has_column("Payment Entry", "custom_work_order"):
+			_wo_col = "custom_work_order"
+		elif frappe.db.has_column("Payment Entry", "work_order"):
+			_wo_col = "work_order"
+
+		if _wo_col:
+			pe_direct = frappe.db.sql(
+				f"""
+				SELECT COALESCE(SUM(paid_amount), 0.0)
+				FROM `tabPayment Entry`
+				WHERE `{_wo_col}` = %s AND is_mobilization_advance = 1 AND docstatus = 1
+				""",
+				(self.boq,),
+			)
+			total_pe_direct = flt(pe_direct[0][0]) if pe_direct else 0.0
+			if total_pe_direct > 0:
+				return total_pe_direct
 
 		# 4. Sum all submitted Payment Entries linked via Payment Entry Reference
 		pe_rows = frappe.db.sql(
